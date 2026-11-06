@@ -1,2 +1,2 @@
 # Gym
-Mental mathematics textbook 
+Mental mathematics 
