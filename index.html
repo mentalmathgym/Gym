@@ -45,6 +45,43 @@ details{background:var(--card);border:1.5px solid var(--line);border-radius:14px
 .qcard input{width:100%;font:700 28px Poppins,system-ui,sans-serif;text-align:center;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
 .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.clk{font-size:24px;font-variant-numeric:tabular-nums;color:var(--teal)}
 .big{font-size:52px;font-weight:700;color:var(--brand);line-height:1.1}.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+
+/* Premium mobile learning experience */
+:root{--bg:#f3f6fc;--card:#fff;--ink:#17243a;--mute:#68768c;--brand:#244b83;--on-brand:#fff;--teal:#0c9b91;--tealtint:#e3f7f4;--amber:#e5a13b;--ambtint:#fff5e5;--tint:#edf2fa;--line:#dce4f0;--bad:#c9473d;--good:#087f70}
+body{background:linear-gradient(180deg,#edf3fc 0,#f7f9fd 260px,var(--bg) 100%);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{padding:20px 16px 56px}
+h1{font-size:28px;letter-spacing:-.8px;color:#18365f}
+h2{letter-spacing:-.35px}
+.hero{background:linear-gradient(135deg,#17365f,#2867a5 65%,#168e91);color:#fff;border-radius:24px;padding:22px 20px;margin:4px 0 18px;box-shadow:0 14px 34px #18365f25}
+.hero h1{color:#fff;font-size:27px;margin:4px 0 8px}
+.hero p{color:#e4eefb;font-size:14px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;color:#aeece4}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.hero-stat{background:#ffffff1c;border:1px solid #ffffff28;border-radius:14px;padding:10px 8px}
+.hero-stat b{display:block;font-size:21px;line-height:1.2}
+.hero-stat small{color:#dceafb;font-size:10px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:22px 2px 10px}
+.section-head h2{margin:0;font-size:18px}
+.chap{border:1px solid #e0e7f1;border-radius:18px;padding:15px;background:#fff;box-shadow:0 5px 16px #1b3c6410;transition:transform .15s,border-color .15s}
+.chap:active{transform:scale(.99)}
+.num{background:linear-gradient(145deg,#244b83,#3979b8);box-shadow:0 4px 10px #244b8328}
+.chap em{font-weight:700}
+.tabs{padding:8px 0 14px;scrollbar-width:none}
+.tabs button{box-shadow:0 2px 7px #18365f0a}
+.tabs button[aria-selected="true"]{box-shadow:0 5px 12px #244b8330}
+.card,.qcard{box-shadow:0 5px 18px #18365f0c}
+.go{background:linear-gradient(110deg,#244b83,#2875a9);box-shadow:0 6px 14px #244b8328}
+.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.metric{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px;box-shadow:0 4px 14px #18365f0a}
+.metric b{display:block;font-size:24px;color:var(--brand)}
+.metric small{color:var(--mute);font-size:12px}
+.progress-track{height:8px;border-radius:99px;background:var(--tint);overflow:hidden;margin-top:7px}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#13a69a,#5bc6a8)}
+.history-item{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px;margin:8px 0}
+.history-item .row{font-size:13px}
+.empty-state{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:18px;text-align:center;color:var(--mute)}
+@media(min-width:480px){main{padding-left:20px;padding-right:20px}.hero{padding:25px}}
+
 </style>
 </head>
 <body><main id="app"></main>
@@ -57,7 +94,16 @@ const load=()=>{try{return JSON.parse(localStorage.getItem("mmgl.v1"))||{}}catch
 const chap=()=>DATA.find(c=>c.id===location.hash.slice(1));
 function render(){clearInterval(st.tick);const c=chap();c?chapterView(c):home();window.scrollTo(0,0)}
 addEventListener("hashchange",()=>{st.tab="learn";st.run=null;render()});
-function home(){const p=load();$("#app").innerHTML=`<h1>The Mental Math Gym</h1><p class="mute">The digital companion to the book. Choose a chapter to learn, practise and test yourself.</p><div class="cards">`+DATA.map(c=>{const b=p[c.id]||{};return`<a class="chap" href="#${c.id}"><span class="num">${c.num}</span><span><b>${esc(c.title)}</b><small>${esc(c.intro)}</small><em>${b.mcq!=null?"MCQ best "+b.mcq+"/"+c.mcq.length:""} ${b.timed!=null?" Timed best "+b.timed+"/"+c.timed.length:""}</em></span></a>`}).join("")+`</div><p class="mute">Your results are saved only on this device. Nothing is sent anywhere.</p>`}
+function home(){
+ const p=load(),hist=Array.isArray(p.history)?p.history:[],tests=hist.length;
+ const avg=tests?Math.round(hist.reduce((a,x)=>a+x.pct,0)/tests):0;
+ const best=tests?Math.max(...hist.map(x=>x.pct)):0;
+ const completed=new Set(hist.map(x=>x.chapterId)).size;
+ $("#app").innerHTML=`<section class="hero"><div class="eyebrow">YOUR PERSONAL MENTAL MATHS SPACE</div><h1>The Mental Math Gym</h1><p>Build speed, sharpen accuracy and train your brain one challenge at a time.</p><div class="hero-stats"><div class="hero-stat"><b>${tests}</b><small>TESTS TAKEN</small></div><div class="hero-stat"><b>${tests?avg+"%":"—"}</b><small>AVERAGE SCORE</small></div><div class="hero-stat"><b>${tests?best+"%":"—"}</b><small>BEST SCORE</small></div></div></section>
+ <div class="section-head"><h2>Your learning path</h2><span class="mute">${completed}/${DATA.length} chapters tried</span></div>
+ <div class="cards">`+DATA.map(c=>{const b=p[c.id]||{},n=hist.filter(x=>x.chapterId===c.id).length;return`<a class="chap" href="#${c.id}"><span class="num">${c.num}</span><span style="min-width:0"><b>${esc(c.title)}</b><small>${esc(c.intro)}</small><em>${n? n+" tests completed · ":""}${b.mcq!=null?"MCQ best "+b.mcq+"/"+c.mcq.length:""} ${b.timed!=null?" · Timed best "+b.timed+"/"+c.timed.length:""}</em></span></a>`}).join("")+`</div>
+ <div class="section-head"><h2>Recent activity</h2></div>`+(hist.length?hist.slice(-4).reverse().map(x=>`<div class="history-item"><b>${esc(x.chapterTitle)}</b><div class="row"><span>${esc(x.kind)} · ${new Date(x.date).toLocaleDateString()}</span><b>${x.score}/${x.total} · ${x.pct}%</b></div></div>`).join(""):`<div class="empty-state">Your test history will appear here after your first completed test.</div>`)+`<p class="mute" style="margin-top:16px">Your progress is stored on this device and browser. It is not sent to a server.</p>`;
+}
 function chapterView(c){$("#app").innerHTML=`<a class="back" href="#">All chapters</a><p class="mute">Chapter ${c.num}</p><h1>${esc(c.title)}</h1><div class="tabs" role="tablist">`+TABS.map(([k,l])=>`<button role="tab" aria-selected="${st.tab===k}" data-t="${k}">${l}</button>`).join("")+`</div><div id="pane"></div>`;
  document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{st.tab=b.dataset.t;st.run=null;clearInterval(st.tick);chapterView(c)});
  ({learn,visual,tech,ex,prac,mcq,timed,res})[st.tab](c,$("#pane"))}
@@ -84,7 +130,18 @@ function prac(c,p){p.innerHTML=`<p class="mute">Free practice with no timer. Typ
 function mcq(c,p){if(!st.run||st.run.k!=="mcq"){p.innerHTML=`<div class="card"><h3>MCQ test</h3><p>${c.mcq.length} questions. Choose the best answer. No calculator.</p><button class="go" id="go">Start MCQ test</button></div>`;$("#go").onclick=()=>{st.run={k:"mcq",i:0,ans:[]};mcq(c,p)};return}
  const r=st.run,q=c.mcq[r.i];p.innerHTML=`<p class="mute">Question ${r.i+1} of ${c.mcq.length}</p><div class="qcard"><div class="q">${esc(q.q)}</div><div class="opts">${q.opts.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}</div></div>`;
  p.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{r.ans.push(+b.dataset.k);r.i++;r.i>=c.mcq.length?finish(c,"mcq","MCQ test",c.mcq.map((q,i)=>({q:q.q,ok:r.ans[i]===q.ci,you:q.opts[r.ans[i]],right:q.opts[q.ci]}))):mcq(c,p)})}
-function finish(c,k,title,rows,el){const s=rows.filter(x=>x.ok).length;st.last[c.id+k]={title,s,n:rows.length,rows,el};const pr=load(),b=pr[c.id]||{};if(b[k]==null||s>b[k])b[k]=s;pr[c.id]=b;save(pr);clearInterval(st.tick);st.run=null;st.tab="res";chapterView(c)}
+function finish(c,k,title,rows,el){
+ const s=rows.filter(x=>x.ok).length,pct=Math.round(100*s/rows.length);
+ st.last[c.id+k]={title,s,n:rows.length,rows,el};
+ const pr=load(),b=pr[c.id]||{};
+ if(b[k]==null||s>b[k])b[k]=s;
+ pr[c.id]=b;
+ if(!Array.isArray(pr.history))pr.history=[];
+ pr.history.push({id:"test-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),date:new Date().toISOString(),chapterId:c.id,chapterTitle:c.title,kind:title,score:s,total:rows.length,pct,elapsed:el||null,rows});
+ pr.history=pr.history.slice(-200);
+ save(pr);
+ clearInterval(st.tick);st.run=null;st.tab="res";chapterView(c)
+}
 function timed(c,p){const T=180;if(!st.run||st.run.k!=="timed"){p.innerHTML=`<div class="card"><h3>Timed test</h3><p>${c.timed.length} questions in 3 minutes. Type each answer and press Enter. Unanswered questions count as missed.</p><button class="go" id="go">Start timed test</button></div>`;$("#go").onclick=()=>{st.run={k:"timed",t0:Date.now(),i:0,ans:[]};timed(c,p)};return}
  const r=st.run;p.innerHTML=`<div class="bar"><span class="mute" id="qn"></span><b id="clk" class="clk"></b></div><div class="qcard"><div class="q" id="tq"></div><input id="ti" inputmode="decimal" autocomplete="off" aria-label="Your answer" placeholder="Answer"><button class="go" id="tn">Next</button></div>`;
  const show=()=>{$("#qn").textContent=`Question ${r.i+1} of ${c.timed.length}`;$("#tq").textContent=c.timed[r.i].q;$("#ti").value="";$("#ti").focus()};
@@ -92,8 +149,12 @@ function timed(c,p){const T=180;if(!st.run||st.run.k!=="timed"){p.innerHTML=`<di
  const sub=()=>{const v=$("#ti").value.replace(/[,\s]/g,"");if(v==="")return;r.ans.push(v);r.i++;r.i>=c.timed.length?fin():show()};
  $("#tn").onclick=sub;$("#ti").addEventListener("keydown",e=>{if(e.key==="Enter")sub()});show();
  clearInterval(st.tick);st.tick=setInterval(()=>{const rem=T-(Date.now()-r.t0)/1000,s=Math.max(0,Math.ceil(rem));$("#clk").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");if(rem<=0)fin()},200)}
-function res(c,p){const it=["mcq","timed"].map(k=>st.last[c.id+k]).filter(Boolean);if(!it.length){p.innerHTML=`<div class="card"><h3>No result yet</h3><p>Take the MCQ test or the timed test. Your score and the correct answers will appear here instantly.</p></div>`;return}
- p.innerHTML=it.map(r=>{const pct=Math.round(100*r.s/r.n),lv=pct>=90?"Excellent":pct>=75?"Strong":pct>=50?"Keep practising":"Review the techniques first";return`<div class="card"><h3>${r.title}</h3><div class="big" data-score>${r.s}/${r.n}</div><p><b>${lv}</b>, ${pct}% accuracy${r.el?", "+Math.round(r.el)+" seconds":""}</p><h4>Review</h4>`+r.rows.map(x=>`<div class="row"><span>${esc(x.q)}</span><span class="${x.ok?"good":"bad"}">${x.ok?"Correct "+esc(x.right):"You: "+esc(x.you)+", answer: "+esc(x.right)}</span></div>`).join("")+`</div>`}).join("")}
+function res(c,p){
+ const saved=load(),history=(Array.isArray(saved.history)?saved.history:[]).filter(x=>x.chapterId===c.id).slice().reverse();
+ const latest=history[0];
+ if(!latest){p.innerHTML=`<div class="empty-state"><h3>No result yet</h3><p>Complete an MCQ or Timed Test. Your score, review and test history will be saved here.</p></div>`;return}
+ p.innerHTML=`<div class="card"><span class="chip">LATEST RESULT</span><h3>${esc(latest.kind)}</h3><div class="big">${latest.score}/${latest.total}</div><p><b>${latest.pct>=90?"Excellent work":latest.pct>=75?"Strong performance":latest.pct>=50?"Keep practising":"Review the techniques first"}</b> · ${latest.pct}% accuracy</p><p class="mute">${new Date(latest.date).toLocaleString()}${latest.elapsed?", "+Math.round(latest.elapsed)+" seconds":""}</p><div class="progress-track"><div class="progress-fill" style="width:${latest.pct}%"></div></div><h4>Answer review</h4>`+latest.rows.map(x=>`<div class="row"><span>${esc(x.q)}</span><span class="${x.ok?"good":"bad"}">${x.ok?"Correct · "+esc(x.right):"You: "+esc(x.you)+", answer: "+esc(x.right)}</span></div>`).join("")+`</div><h3>Saved test history</h3>`+history.map(x=>`<div class="history-item"><b>${esc(x.kind)}</b><div class="row"><span>${new Date(x.date).toLocaleDateString()}</span><b>${x.score}/${x.total} · ${x.pct}%</b></div></div>`).join("")
+}
 render();
 </script>
 </body></html>
