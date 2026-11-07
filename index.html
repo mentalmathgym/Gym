@@ -45,6 +45,24 @@ details{background:var(--card);border:1.5px solid var(--line);border-radius:14px
 .qcard input{width:100%;font:700 28px Poppins,system-ui,sans-serif;text-align:center;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
 .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.clk{font-size:24px;font-variant-numeric:tabular-nums;color:var(--teal)}
 .big{font-size:52px;font-weight:700;color:var(--brand);line-height:1.1}.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);margin:0 -16px 10px;padding:6px 16px 0;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.top .back{margin:0;white-space:nowrap;font-size:14px}
+.top h1.ctitle{font-size:18px;line-height:1.25;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .tabs{padding:8px 0 10px}
+.cloud-auth{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 16px}
+.cloud-auth h3{margin:0 0 6px}.cloud-auth p{font-size:13px;color:var(--mute);margin:4px 0 10px}
+.cloud-auth .auth-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.cloud-auth input{min-width:0;flex:1 1 135px;border:1px solid var(--line);border-radius:10px;padding:11px;background:var(--bg);color:var(--ink);font:inherit;font-size:14px}
+.cloud-auth button{border:0;border-radius:10px;padding:10px 13px;background:var(--brand);color:var(--on-brand);font:500 13px Poppins,system-ui,sans-serif;cursor:pointer}
+.cloud-auth button.secondary{background:var(--tint);color:var(--ink);border:1px solid var(--line)}
+.cloud-auth button:disabled{opacity:.55;cursor:wait}
+.cloud-auth .auth-status{font-size:12px;margin-top:8px;color:var(--mute);overflow-wrap:anywhere}
+.cloud-auth .auth-status.good{color:var(--good)}.cloud-auth .auth-status.bad{color:var(--bad)}
+.cloud-auth .auth-user{font-weight:600;overflow-wrap:anywhere}
+
 </style>
 </head>
 <body><main id="app"></main>
@@ -55,11 +73,27 @@ const TABS=[["learn","Learn"],["visual","Visual"],["tech","Techniques"],["ex","E
 const st={tab:"learn",last:{},run:null,tick:0};
 const load=()=>{try{return JSON.parse(localStorage.getItem("mmgl.v1"))||{}}catch(e){return{}}},save=d=>{try{localStorage.setItem("mmgl.v1",JSON.stringify(d))}catch(e){}};
 const chap=()=>DATA.find(c=>c.id===location.hash.slice(1));
+
+window.mmgApplyCloudResult = function(data){
+  try{
+    if(!data || !data.chapterId || !data.testType || !data.result) return;
+    const c=DATA.find(x=>x.id===data.chapterId);
+    if(!c) return;
+    const key=c.id+data.testType, r=data.result;
+    if(!Array.isArray(r.rows) || typeof r.s!=="number" || typeof r.n!=="number") return;
+    const old=st.last[key];
+    if(!old || Number(r.createdAt||0)>Number(old.createdAt||0)) st.last[key]=r;
+    const pr=load(), b=pr[c.id]||{};
+    if(b[data.testType]==null || r.s>b[data.testType]) b[data.testType]=r.s;
+    pr[c.id]=b; save(pr);
+  }catch(e){console.warn("Could not restore cloud result",e)}
+};
+
 function render(){clearInterval(st.tick);const c=chap();c?chapterView(c):home();window.scrollTo(0,0)}
 addEventListener("hashchange",()=>{st.tab="learn";st.run=null;render()});
-function home(){const p=load();$("#app").innerHTML=`<h1>The Mental Math Gym</h1><p class="mute">The digital companion to the book. Choose a chapter to learn, practise and test yourself.</p><div class="cards">`+DATA.map(c=>{const b=p[c.id]||{};return`<a class="chap" href="#${c.id}"><span class="num">${c.num}</span><span><b>${esc(c.title)}</b><small>${esc(c.intro)}</small><em>${b.mcq!=null?"MCQ best "+b.mcq+"/"+c.mcq.length:""} ${b.timed!=null?" Timed best "+b.timed+"/"+c.timed.length:""}</em></span></a>`}).join("")+`</div><p class="mute">Your results are saved only on this device. Nothing is sent anywhere.</p>`}
-function chapterView(c){$("#app").innerHTML=`<a class="back" href="#">All chapters</a><p class="mute">Chapter ${c.num}</p><h1>${esc(c.title)}</h1><div class="tabs" role="tablist">`+TABS.map(([k,l])=>`<button role="tab" aria-selected="${st.tab===k}" data-t="${k}">${l}</button>`).join("")+`</div><div id="pane"></div>`;
- document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{st.tab=b.dataset.t;st.run=null;clearInterval(st.tick);chapterView(c)});
+function home(){const p=load();$("#app").innerHTML=`<div id="cloud-auth" class="cloud-auth"></div><h1>The Mental Math Gym</h1><p class="mute">The digital companion to the book. Choose a chapter to learn, practise and test yourself.</p><div class="cards">`+DATA.map(c=>{const b=p[c.id]||{};return`<a class="chap" href="#${c.id}"><span class="num">${c.num}</span><span><b>${esc(c.title)}</b><small>${esc(c.intro)}</small><em>${b.mcq!=null?"MCQ best "+b.mcq+"/"+c.mcq.length:""} ${b.timed!=null?" Timed best "+b.timed+"/"+c.timed.length:""}</em></span></a>`}).join("")+`</div><p class="mute">Your results are saved on this device. Sign in above to back up test results to your private cloud account.</p>`}
+function chapterView(c){$("#app").innerHTML=`<div id="cloud-auth" class="cloud-auth"></div><div class="top"><div class="trow"><a class="back" href="#">‹ All chapters</a><span class="mute">Chapter ${c.num}</span></div><h1 class="ctitle">${esc(c.title)}</h1><div class="tabs" role="tablist">`+TABS.map(([k,l])=>`<button role="tab" aria-selected="${st.tab===k}" data-t="${k}">${l}</button>`).join("")+`</div></div><div id="pane"></div>`;
+ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{st.tab=b.dataset.t;st.run=null;clearInterval(st.tick);chapterView(c);window.scrollTo(0,0)});
  ({learn,visual,tech,ex,prac,mcq,timed,res})[st.tab](c,$("#pane"))}
 function learn(c,p){p.innerHTML=`<div class="note"><b>Chapter goal</b><p>${esc(c.goal)}</p></div><p>${esc(c.intro)}</p>`+(c.warm.length?`<h2>Warm-up</h2>`+c.warm.map(w=>`<div class="note"><b>${esc(w.t)}</b><p>${esc(w.x)}</p></div>`).join(""):"")+`<h2>The ${c.tricks.length} techniques</h2>`+c.tricks.map((t,i)=>`<div class="card"><span class="chip">Technique ${i+1}</span><h3>${esc(t.name)}</h3><p><b>Use it when:</b> ${esc(t.when)}</p><p class="mute">${esc(t.why)}</p></div>`).join("")+`<div class="note"><b>Remember</b><p>${c.summary.map((s,i)=>esc(s)).join(" ")}</p></div>`}
 const flow=L=>`<ol class="flow">`+L.map((l,i)=>`<li class="${i===L.length-1?"last":""}">${esc(l)}</li>`).join("")+`</ol>`;
@@ -84,7 +118,7 @@ function prac(c,p){p.innerHTML=`<p class="mute">Free practice with no timer. Typ
 function mcq(c,p){if(!st.run||st.run.k!=="mcq"){p.innerHTML=`<div class="card"><h3>MCQ test</h3><p>${c.mcq.length} questions. Choose the best answer. No calculator.</p><button class="go" id="go">Start MCQ test</button></div>`;$("#go").onclick=()=>{st.run={k:"mcq",i:0,ans:[]};mcq(c,p)};return}
  const r=st.run,q=c.mcq[r.i];p.innerHTML=`<p class="mute">Question ${r.i+1} of ${c.mcq.length}</p><div class="qcard"><div class="q">${esc(q.q)}</div><div class="opts">${q.opts.map((o,k)=>`<button class="opt" data-k="${k}">${esc(o)}</button>`).join("")}</div></div>`;
  p.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{r.ans.push(+b.dataset.k);r.i++;r.i>=c.mcq.length?finish(c,"mcq","MCQ test",c.mcq.map((q,i)=>({q:q.q,ok:r.ans[i]===q.ci,you:q.opts[r.ans[i]],right:q.opts[q.ci]}))):mcq(c,p)})}
-function finish(c,k,title,rows,el){const s=rows.filter(x=>x.ok).length;st.last[c.id+k]={title,s,n:rows.length,rows,el};const pr=load(),b=pr[c.id]||{};if(b[k]==null||s>b[k])b[k]=s;pr[c.id]=b;save(pr);clearInterval(st.tick);st.run=null;st.tab="res";chapterView(c)}
+function finish(c,k,title,rows,el){const s=rows.filter(x=>x.ok).length;st.last[c.id+k]={title,s,n:rows.length,rows,el};const pr=load(),b=pr[c.id]||{};if(b[k]==null||s>b[k])b[k]=s;pr[c.id]=b;save(pr);if(window.MMGFirebase&&window.MMGFirebase.saveResult){window.MMGFirebase.saveResult({chapterId:c.id,chapterTitle:c.title,testType:k,result:{title,s,n:rows.length,rows,el:el||null,createdAt:Date.now()}})}clearInterval(st.tick);st.run=null;st.tab="res";chapterView(c);window.scrollTo(0,0)}
 function timed(c,p){const T=180;if(!st.run||st.run.k!=="timed"){p.innerHTML=`<div class="card"><h3>Timed test</h3><p>${c.timed.length} questions in 3 minutes. Type each answer and press Enter. Unanswered questions count as missed.</p><button class="go" id="go">Start timed test</button></div>`;$("#go").onclick=()=>{st.run={k:"timed",t0:Date.now(),i:0,ans:[]};timed(c,p)};return}
  const r=st.run;p.innerHTML=`<div class="bar"><span class="mute" id="qn"></span><b id="clk" class="clk"></b></div><div class="qcard"><div class="q" id="tq"></div><input id="ti" inputmode="decimal" autocomplete="off" aria-label="Your answer" placeholder="Answer"><button class="go" id="tn">Next</button></div>`;
  const show=()=>{$("#qn").textContent=`Question ${r.i+1} of ${c.timed.length}`;$("#tq").textContent=c.timed[r.i].q;$("#ti").value="";$("#ti").focus()};
@@ -94,6 +128,155 @@ function timed(c,p){const T=180;if(!st.run||st.run.k!=="timed"){p.innerHTML=`<di
  clearInterval(st.tick);st.tick=setInterval(()=>{const rem=T-(Date.now()-r.t0)/1000,s=Math.max(0,Math.ceil(rem));$("#clk").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");if(rem<=0)fin()},200)}
 function res(c,p){const it=["mcq","timed"].map(k=>st.last[c.id+k]).filter(Boolean);if(!it.length){p.innerHTML=`<div class="card"><h3>No result yet</h3><p>Take the MCQ test or the timed test. Your score and the correct answers will appear here instantly.</p></div>`;return}
  p.innerHTML=it.map(r=>{const pct=Math.round(100*r.s/r.n),lv=pct>=90?"Excellent":pct>=75?"Strong":pct>=50?"Keep practising":"Review the techniques first";return`<div class="card"><h3>${r.title}</h3><div class="big" data-score>${r.s}/${r.n}</div><p><b>${lv}</b>, ${pct}% accuracy${r.el?", "+Math.round(r.el)+" seconds":""}</p><h4>Review</h4>`+r.rows.map(x=>`<div class="row"><span>${esc(x.q)}</span><span class="${x.ok?"good":"bad"}">${x.ok?"Correct "+esc(x.right):"You: "+esc(x.you)+", answer: "+esc(x.right)}</span></div>`).join("")+`</div>`}).join("")}
+window.mmgApplyCloudResult=d=>{try{if(!d||!d.chapterId||!d.testType||!d.result||typeof d.result.s!=="number")return;const pr=load(),b=pr[d.chapterId]||{};if(b[d.testType]==null||d.result.s>b[d.testType]){b[d.testType]=d.result.s;pr[d.chapterId]=b;save(pr)}}catch(e){}};
+window.mmgRefresh=()=>{if(!chap()&&!st.run)home()};
 render();
 </script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup,
+  signInWithRedirect, getRedirectResult, signOut
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import {
+  getFirestore, collection, addDoc, getDocs, query, orderBy, limit,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBBDtfa9JMqihonMPpCFIic0MupJ7nGuN8",
+  authDomain: "mental-math-gym.firebaseapp.com",
+  projectId: "mental-math-gym",
+  storageBucket: "mental-math-gym.firebasestorage.app",
+  messagingSenderId: "523992797921",
+  appId: "1:523992797921:web:d6302a20f23420903c9da0",
+  measurementId: "G-GMENXNTGR0"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({prompt:"select_account"});
+
+let currentUser = null;
+let lastCloudCount = 0;
+let busy = false;
+const statusText = (msg, kind="") => {
+  const el=document.querySelector("#cloud-auth .auth-status");
+  if(el){el.textContent=msg;el.className="auth-status "+kind;}
+};
+const safe = s => String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const setBusy = v => {
+  busy=v;
+  document.querySelectorAll("#cloud-auth button").forEach(b=>b.disabled=v);
+};
+
+function paint(){
+  const box=document.getElementById("cloud-auth");
+  if(!box)return;
+  if(currentUser){
+    box.innerHTML=`<h3>☁️ Cloud Backup</h3>
+      <p class="auth-user">Signed in: ${safe(currentUser.displayName||currentUser.email)}</p>
+      <p>Your test results can sync across devices when you sign in with this same account.</p>
+      <div class="auth-row"><button id="mmg-sync">Sync results</button><button class="secondary" id="mmg-logout">Sign out</button></div>
+      <div class="auth-status good" aria-live="polite">Connected to your private account. ${lastCloudCount?lastCloudCount+" saved result(s) found.":""}</div>`;
+  }else{
+    box.innerHTML=`<h3>☁️ Save progress across devices</h3>
+      <p>Sign in to back up your test results. Your existing on-device results remain on this device too.</p>
+      <div class="auth-row"><input id="mmg-email" type="email" autocomplete="email" placeholder="Email address" aria-label="Email address"><input id="mmg-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password"></div>
+      <div class="auth-row"><button id="mmg-login">Sign in</button><button class="secondary" id="mmg-register">Create account</button><button class="secondary" id="mmg-google">Continue with Google</button></div>
+      <div class="auth-status" aria-live="polite">Not signed in. Local practice and tests still work.</div>`;
+  }
+}
+
+async function restoreResults(user){
+  const ref=collection(db,"users",user.uid,"results");
+  const q=query(ref,orderBy("createdAt","desc"),limit(100));
+  const snap=await getDocs(q);
+  lastCloudCount=snap.size;
+  snap.forEach(doc=>{
+    const d=doc.data();
+    if(window.mmgApplyCloudResult) window.mmgApplyCloudResult(d);
+  });
+  if(window.mmgRefresh)window.mmgRefresh();
+  paint();
+  statusText(`Cloud sync ready. ${snap.size} saved result(s) loaded.`, "good");
+}
+
+async function saveResult(payload){
+  if(!currentUser){
+    statusText("Test saved on this device. Sign in to back it up to the cloud.");
+    return;
+  }
+  try{
+    const ref=collection(db,"users",currentUser.uid,"results");
+    await addDoc(ref,{...payload,createdAt:serverTimestamp(),clientCreatedAt:payload.result.createdAt});
+    lastCloudCount++;
+    statusText("Test result saved securely to your cloud account.", "good");
+  }catch(err){
+    console.error(err);
+    statusText("Cloud save failed: "+(err.code||err.message)+" — your local result is still saved.", "bad");
+  }
+}
+
+window.MMGFirebase = {
+  saveResult,
+  getUser:()=>currentUser
+};
+
+document.addEventListener("click",async e=>{
+  const id=e.target?.id;
+  if(!id)return;
+  if(id==="mmg-login" || id==="mmg-register"){
+    const email=document.getElementById("mmg-email")?.value.trim();
+    const password=document.getElementById("mmg-password")?.value||"";
+    if(!email || password.length<6){statusText("Enter a valid email and a password of at least 6 characters.","bad");return;}
+    setBusy(true);
+    try{
+      if(id==="mmg-register") await createUserWithEmailAndPassword(auth,email,password);
+      else await signInWithEmailAndPassword(auth,email,password);
+    }catch(err){statusText(err.message,"bad");}
+    finally{setBusy(false);}
+  }
+  if(id==="mmg-google"){
+    setBusy(true);
+    try{await signInWithPopup(auth,googleProvider);}
+    catch(err){
+      if(err.code==="auth/popup-blocked" || err.code==="auth/operation-not-supported-in-this-environment"){
+        await signInWithRedirect(auth,googleProvider);
+      }else{statusText(err.message,"bad");}
+    }finally{setBusy(false);}
+  }
+  if(id==="mmg-logout"){
+    try{await signOut(auth);}catch(err){statusText(err.message,"bad");}
+  }
+  if(id==="mmg-sync" && currentUser){
+    setBusy(true);
+    try{await restoreResults(currentUser);}
+    catch(err){statusText("Sync failed: "+(err.code||err.message),"bad");}
+    finally{setBusy(false);}
+  }
+});
+
+try{await getRedirectResult(auth);}catch(err){console.warn("Google redirect sign-in:",err);}
+onAuthStateChanged(auth,async user=>{
+  currentUser=user;
+  lastCloudCount=0;
+  paint();
+  if(user){
+    statusText("Signed in. Loading cloud results…");
+    try{await restoreResults(user);}
+    catch(err){
+      console.error(err);
+      statusText("Signed in, but results could not load: "+(err.code||err.message)+". Check Firestore Rules.", "bad");
+    }
+  }
+});
+new MutationObserver(()=>{if(document.getElementById("cloud-auth"))paint();})
+  .observe(document.getElementById("app"),{childList:true,subtree:false});
+</script>
+
 </body></html>
