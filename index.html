@@ -1,4 +1,122 @@
-<!doctype html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<title>The Mental Math Gym — Version 2.4.1 Final</title>
+<style>
+:root{--bg:#101827;--panel:#1b2940;--panel2:#243650;--line:#354963;--text:#f5f7fb;--muted:#a8b7ca;--mint:#65e5bd;--gold:#ffd36b;--danger:#ff8585}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding-bottom:84px}
+header{padding:18px;background:#172338;position:sticky;top:0;z-index:5;border-bottom:1px solid #273951}.brand{font-size:11px;letter-spacing:3px;color:var(--mint);font-weight:800}header h1{font-size:23px;margin:7px 0 3px}header p{margin:0;color:var(--muted);font-size:13px}
+main{max-width:720px;margin:auto;padding:16px}.view{display:none}.view.active{display:block}.card{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:16px;margin-bottom:14px}.hero{background:linear-gradient(135deg,#20504f,#19354c)}
+.eyebrow,.tag{display:inline-block;color:var(--mint);background:#21463f;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:.5px}
+h2{font-size:21px;margin:10px 0 7px}h3{font-size:17px;margin:0 0 12px}p{line-height:1.5}.muted{color:var(--muted);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.stat{background:#263750;border-radius:12px;padding:12px 5px;text-align:center}.stat strong{display:block;color:var(--mint);font-size:21px}.stat small{font-size:9px;color:var(--muted);letter-spacing:.4px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 11px}.section-head h3{margin:0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:left;color:var(--text);min-height:85px}.tile b{display:block;margin:5px 0}.tile small{color:var(--muted)}
+button{font:inherit;cursor:pointer}.btn{border:0;border-radius:11px;padding:12px 14px;font-weight:750;background:var(--mint);color:#102b2a}.btn.secondary{background:#2a3d58;color:#fff;border:1px solid #49617d}.btn.ghost{background:transparent;color:var(--mint);border:1px solid #4b887b}.btn.danger{background:#512d38;color:#ffd6d6;border:1px solid #86505a}.btn.full{width:100%}.btn.small{padding:8px 10px;font-size:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.spread{display:flex;align-items:center;justify-content:space-between;gap:10px}
+input,textarea,select{width:100%;padding:12px;border:1px solid #50627a;border-radius:10px;background:#101827;color:#fff;font:inherit;margin:5px 0 12px}textarea{min-height:88px;resize:vertical}label{font-size:12px;color:var(--muted);font-weight:700}
+.progress{height:8px;background:#35445a;border-radius:20px;overflow:hidden;margin:9px 0}.progress>div{height:100%;background:var(--mint);width:0%}.item{background:#202f47;border:1px solid #3a4d68;border-radius:13px;padding:13px;margin:9px 0}.item p{margin:6px 0}
+.bottomnav{position:fixed;bottom:0;left:0;right:0;background:#172338;border-top:1px solid #354963;display:grid;grid-template-columns:repeat(5,1fr);padding:7px 5px calc(7px + env(safe-area-inset-bottom));z-index:10}.navbtn{border:0;background:none;color:#9eacc1;font-size:10px;padding:6px 2px}.navbtn span{display:block;font-size:19px;margin-bottom:2px}.navbtn.active{color:var(--mint)}
+.question{font-size:34px;text-align:center;font-weight:800;margin:22px 0}.answer{font-size:22px;text-align:center}.feedback{text-align:center;min-height:27px;margin:10px 0;font-weight:700}
+button:disabled{opacity:.55;cursor:not-allowed}.hidden{display:none!important}.modalback{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:18px;z-index:30}.modalback.show{display:flex}.modal{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:#1b2940;border:1px solid #50627a;border-radius:17px;padding:18px}
+hr{border:0;border-top:1px solid var(--line);margin:14px 0}.notice{border-left:3px solid var(--gold);padding:9px 11px;background:#3c3528;color:#f8e7bd;border-radius:7px;font-size:12px;line-height:1.5}footer{text-align:center;color:#71839a;font-size:10px;padding:20px}
+@media(min-width:600px){main{padding:22px}.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="brand">THE MENTAL MATH GYM</div><h1>Train Your Brain. 🧠</h1><p>Version 2.4.1 · Learning · Practice · Results · Backup Transfer</p></header>
+<main>
+<section id="homeView" class="view active">
+ <div class="card hero"><span class="eyebrow">YOUR LEARNING JOURNEY</span><h2>Build your mental maths power.</h2><p class="muted">Learn concepts, practise with purpose and measure your progress.</p>
+  <div class="stats"><div class="stat"><strong id="statChapters">0</strong><small>CHAPTERS</small></div><div class="stat"><strong id="statQuestions">0</strong><small>QUESTIONS DONE</small></div><div class="stat"><strong id="statAccuracy">0%</strong><small>ACCURACY</small></div></div></div>
+ <div class="section-head"><h3>Continue Learning</h3><button class="btn ghost small" onclick="showView('library')">All chapters</button></div><div id="homeChapters"></div>
+ <div class="section-head"><h3>Your Progress</h3></div><div class="card"><div class="spread"><b>Overall practice</b><span class="muted" id="overallText">0 answered</span></div><div class="progress"><div id="overallBar"></div></div><p class="muted">Your progress is saved on this device. Export a JSON backup regularly.</p></div>
+</section>
+<section id="libraryView" class="view"><div class="section-head"><h3>Chapter Library</h3><span class="tag" id="chapterCountTag">0 chapters</span></div><p class="muted">Choose a chapter to explore its topics, lessons and practice questions.</p><div id="chapterList"></div></section>
+<section id="practiceView" class="view"><div class="card"><div class="spread"><span class="tag" id="practiceLabel">PRACTICE</span><span class="muted" id="practiceCounter">0 / 0</span></div><h2 id="practiceTitle">Choose a chapter</h2><p class="muted" id="practiceHelp">Open a chapter from the Library and start a practice set.</p><div id="practiceArea" class="hidden"><div class="question" id="questionText"></div><input id="answerInput" class="answer" type="text" inputmode="decimal" autocomplete="off" placeholder="Your answer"><button id="submitBtn" class="btn full" onclick="submitAnswer()">Submit answer</button><div id="answerFeedback" class="feedback" aria-live="polite"></div><button class="btn secondary full" onclick="endPractice()">Finish practice</button></div></div><div id="practiceResult" class="card hidden"></div></section>
+<section id="progressView" class="view"><div class="section-head"><h3>Results & Progress</h3></div><div class="card"><div class="stats"><div class="stat"><strong id="pAttempted">0</strong><small>ATTEMPTED</small></div><div class="stat"><strong id="pCorrect">0</strong><small>CORRECT</small></div><div class="stat"><strong id="pAccuracy">0%</strong><small>ACCURACY</small></div></div><p class="muted" id="sessionSummary"></p></div><h3>Chapter performance</h3><div id="chapterProgress"></div><div class="section-head"><h3>Recent practice history</h3></div><div id="historyList"></div><div class="notice">Progress is stored locally in this browser on this device. Clearing browser/app storage may erase it. Keep an external JSON backup.</div></section>
+<section id="adminView" class="view"><div class="section-head"><h3>Admin Studio</h3><span class="tag">LOCAL ADMIN</span></div><div id="adminLocked" class="card"><h2>Admin access</h2><p class="muted">Enter your local admin PIN to manage learning content.</p><label>Admin PIN</label><input id="adminPin" type="password" inputmode="numeric" placeholder="Default PIN: 2468"><button class="btn full" onclick="unlockAdmin()">Unlock Admin Panel</button><p class="muted">The PIN is a convenience lock only, not secure authentication.</p></div>
+ <div id="adminTools" class="hidden"><div class="card"><h3>Content management</h3><div class="grid"><button class="tile" onclick="openChapterForm()">➕ <b>Add chapter</b><small>Create a new chapter</small></button><button class="tile" onclick="openTopicForm()">📚 <b>Add topic</b><small>Add topic to a chapter</small></button><button class="tile" onclick="openLessonForm()">📝 <b>Add lesson</b><small>Add lesson content</small></button><button class="tile" onclick="openQuestionForm()">🧠 <b>Add question</b><small>Create practice question</small></button></div></div>
+ <div class="card"><h3>Import & Export</h3><p class="muted">Backup includes chapters, topics, lessons, questions, progress and practice history.</p><button class="btn full" onclick="exportBackup()">Export full JSON backup</button>
+<button class="btn secondary full" onclick="copyBackupToClipboard()">Copy full JSON backup to clipboard</button>
+<p class="muted">To move data between Acode Preview and Chrome, copy the backup here, open the other browser, paste it below and import.</p>
+<hr><label>Paste backup JSON from clipboard</label>
+<textarea id="clipboardImportText" placeholder="Paste the copied MMG-JSON backup here..."></textarea>
+<button class="btn secondary full" onclick="importPastedBackup()">Import pasted JSON backup</button>
+<hr><label>Import a Gym JSON file</label><input id="importFile" type="file" accept=".json,application/json"><select id="importMode"><option value="merge">Merge / add missing content (preserve cumulative totals)</option><option value="replace">Replace all content (careful)</option></select><button class="btn secondary full" onclick="importBackup()">Import JSON</button><p id="dataSafetyStatus" class="muted" aria-live="polite">Version 2.4: full-data verification compares all normalized content, not only summary counts.</p><button class="btn secondary full" onclick="runDataIntegrityCheck()">Check active data</button><button class="btn ghost full" onclick="restorePreImportBackup()">Restore pre-import safety copy</button></div>
+ <div class="card"><h3>Manage chapters</h3><div id="adminChapterList"></div></div><div class="card"><h3>Change local admin PIN</h3><label>New PIN (4–8 digits)</label><input id="newPin" type="password" inputmode="numeric" maxlength="8"><button class="btn secondary full" onclick="changePin()">Save new PIN</button></div><button class="btn ghost full" onclick="lockAdmin()">Lock Admin Panel</button></div>
+</section><footer>THE MENTAL MATH GYM · LEARN · PRACTISE · IMPROVE</footer>
+</main>
+<nav class="bottomnav"><button class="navbtn active" data-view="home" onclick="showView('home')"><span>⌂</span>Home</button><button class="navbtn" data-view="library" onclick="showView('library')"><span>▤</span>Chapters</button><button class="navbtn" data-view="practice" onclick="showView('practice')"><span>✎</span>Practice</button><button class="navbtn" data-view="progress" onclick="showView('progress')"><span>▥</span>Progress</button><button class="navbtn" data-view="admin" onclick="showView('admin')"><span>⚙</span>Admin</button></nav>
+<div class="modalback" id="modalBack" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="spread"><h3 id="modalTitle">Add content</h3><button class="btn secondary small" onclick="closeModal()">Close</button></div><div id="modalBody"></div></div></div>
+<script>
+'use strict';
+const STORAGE_KEY='mmg_v2_data',PIN_KEY='mmg_v2_pin',SAFETY_KEY='mmg_v24_preimport_backup',LEGACY_SAFETY_KEY='mmg_v22_preimport_backup';
+const defaultData={version:2,chapters:[{id:'ch-foundations',title:'Foundations of Mental Mathematics',description:'Build number sense and reliable calculation habits.',order:1,topics:[{id:'tp-number-sense',title:'Number Sense',lessons:[{id:'ls-place-value',title:'Place Value and Number Structure',content:'Explore how digits represent different values according to their positions. Add your own worked examples and explanations here.'}],questions:[{id:'q1',prompt:'What is 35 + 27?',answer:'62',explanation:'35 + 20 = 55, then 55 + 7 = 62.',difficulty:'Beginner'},{id:'q2',prompt:'What is 90 − 46?',answer:'44',explanation:'90 − 40 = 50, then 50 − 6 = 44.',difficulty:'Beginner'},{id:'q3',prompt:'What is 8 × 7?',answer:'56',explanation:'8 groups of 7 make 56.',difficulty:'Beginner'}]}]}],progress:{attempted:0,correct:0,byChapter:{},history:[]}};
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function safeCount(value){const n=Number(value);return Number.isFinite(n)&&n>0?Math.floor(n):0}
+function normalizeHistory(history){
+ const out=[],seen=new Set();
+ (Array.isArray(history)?history:[]).forEach((item,i)=>{
+  if(!item||typeof item!=='object')return;
+  const h={...item};
+  h.attempted=safeCount(h.attempted);h.correct=Math.min(safeCount(h.correct),h.attempted);
+  h.accuracy=h.attempted?Math.round(h.correct/h.attempted*100):0;
+  if(!h.id)h.id='legacy-'+[h.chapterId,h.topicId,h.completedAt,h.attempted,h.correct,i].map(x=>String(x||'')).join('|');
+  if(seen.has(h.id))return;seen.add(h.id);out.push(h);
+ });
+ return out.sort((a,b)=>String(b.completedAt||'').localeCompare(String(a.completedAt||''))).slice(0,100);
+}
+function normalizeData(source){
+ if(!source||!Array.isArray(source.chapters))throw new Error('Invalid Gym data: chapters are missing.');
+ const d=clone(source);d.version=2;
+ d.chapters.forEach((c,i)=>{
+  if(!c||typeof c!=='object')throw new Error('Invalid chapter at position '+(i+1)+'.');
+  if(!c.id)c.id='ch-import-'+i;
+  c.title=String(c.title||'Untitled chapter');
+  if(!Array.isArray(c.topics))c.topics=[];
+  c.topics.forEach((t,j)=>{
+   if(!t||typeof t!=='object')throw new Error('Invalid topic in '+c.title+'.');
+   if(!t.id)t.id='tp-import-'+i+'-'+j;
+   t.title=String(t.title||'Untitled topic');
+   if(!Array.isArray(t.lessons))t.lessons=[];
+   if(!Array.isArray(t.questions))t.questions=[];
+   t.lessons=t.lessons.filter(x=>x&&typeof x==='object').map((x,k)=>({...x,id:String(x.id||'ls-import-'+i+'-'+j+'-'+k),title:String(x.title||'Untitled lesson'),content:String(x.content||'')}));
+   t.questions=t.questions.filter(x=>x&&typeof x==='object').map((x,k)=>({...x,id:String(x.id||'q-import-'+i+'-'+j+'-'+k),prompt:String(x.prompt||''),answer:String(x.answer??''),explanation:String(x.explanation||''),difficulty:String(x.difficulty||'Beginner')}));
+  });
+ });
+ d.progress=d.progress&&typeof d.progress==='object'?d.progress:{};
+ d.progress.attempted=safeCount(d.progress.attempted);
+ d.progress.correct=Math.min(safeCount(d.progress.correct),d.progress.attempted);
+ d.progress.byChapter=d.progress.byChapter&&typeof d.progress.byChapter==='object'?d.progress.byChapter:{};
+ Object.keys(d.progress.byChapter).forEach(id=>{
+  const s=d.progress.byChapter[id]||{};
+  const attempted=safeCount(s.attempted);
+  d.progress.byChapter[id]={attempted,correct:Math.min(safeCount(s.correct),attempted)};
+ });
+ d.progress.history=normalizeHistory(d.progress.history);
+ return d;
+}
+function loadData(){
+ try{const raw=localStorage.getItem(STORAGE_KEY);if(raw)return normalizeData(JSON.parse(raw));}catch(e){console.warn('Could not load saved Gym data:',e);}
+ return clone(defaultData);
+}
+let data=loadData(),adminUnlocked=false,activePractice=null,practiceIndex=0,practiceCorrect=0,practiceAttempted=0,answerLocked=false,answerTimer=null;
+function saveData(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));renderAll();return true}catch(e){alert('Could not save data. Your browser storage may be full. Export a backup and free some space.');console.error(e);return false}}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function uid(p){return p+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)}
+function allQuestions(){return data.chapters.flatMap(c=>(c.topics||[]).flatMap(t=>t.questions||[]))}
+function chapterStats(c){const p=data.progress.byChapter[c.id]||{attempted:0,correct:0};return{attempted:Number(p.attempted)||0,correct:Number(p.correct)||0,accuracy:p.attempted?Math.round(p.correct/p.attempted*100):0}}
+function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(name+'View').classList.add('active');document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));if(name==='admin'&&!adminUnlocked){document.getElementById('adminLocked').classList.remove('hidden');document.getElementById('adminTools').classList.add('hidden')}if(name==='progress')renderProgress();window.scrollTo(0,0)}
+function renderAll(){renderHome();renderLibrary();renderProgress();if(adminUnlocked)renderAdmin()}
+function renderHome(){document.getElementById('statChapters').textContent=data.chapters.length;document.getElementById('statQuestions').textContent=data.progress.attempted;document.getElementById('statAccuracy').textContent=data.progress.attempted?Math.round(data.progress.correct/data.progress.attempted*100)+'%':'0%';document.getElementById('overallText').textContent=data.progress.attempted+' answered';document.getElementById('overallBar').style.width=Math.min(100,data.progress.attempted*5)+'%';document.getElementById('homeChapters').innerHTML=data.chapters.length?data.chapters.slice(0,3).map(c=>`<div class="item"><div class="spread"><b>${esc(c.title)}</b><span class="tag">${c.topics.length} topics</span></div><p class="muted">${esc(c.description||'')}</p><button class="btn small" onclick="openChapter('${esc(c.id)}')">Open chapter</button></div>`).join(''):'<div class="card muted">No chapters yet. Open Admin to add your first chapter.</div>'}
+function renderLibrary(){document.getElementById('chapterCountTag').textContent=data.chapters.length+' chapters';document.getElementById('chapterList').innerHTML=data.chapters.length?data.chapters.map(c=>`<div class="item"><div class="spread"><b>${esc(c.title)}</b><span class="tag">${c.topics.length} topics</span></div><p class="muted">${esc(c.description||'')}</p><button class="btn small" onclick="openChapter('${esc(c.id)}')">View topics</button></div>`).join(''):'<div class="card muted">No chapters available. Add chapters in Admin Studio.</div>'}
+function openChapter(id){const c=data.chapters.find(x=>x.id===id);if(!c)return;let body=`<div class="card"><span class="tag">CHAPTER</span><h2>${esc(c.title)}</h2><p class="muted">${esc(c.description||'')}</p></div>`;if(!c.topics.length)body+='<p class="muted">No topics added yet.</p>';c.topics.forEach(t=>{body+=`<div class="item"><h3>${esc(t.title)}</h3>`;t.lessons.forEach(l=>body+=`<div class="card"><b>📖 ${esc(l.title)}</b><p class="muted">${esc(l.content)}</p></div>`);body+=`<div class="spread"><span class="muted">${t.questions.length} practice questions</span><button class="btn small" onclick="startPractice('${esc(c.id)}','${esc(t.id)}')">Practise</button></div></div>`});document.getElementById('modalTitle').textContent='Chapter details';document.getElementById('modalBody').innerHTML=body;document.getElementById('modalBack').classList.add('show')}
+function closeModal(){document.getElementById('modalBack').classList.remove('show')}
+function startPractice(chId,topicId){const c=data.chapters.find(x=>x.id===chId),t=c?.topics.find(x=>x.id===topicId);if(!t||!t.questions.length){alert('This topic has no questions yet. Add questions in Admin Studio.');return}if(answerTimer)clearTimeout(answerTimer);activePractice={chapterId:chId,topicId,questions:clone(t.questions),startedAt:new Date().toISOString()};practiceIndex=0;practiceCorrect=0;practiceAttempted=0;answerLocked=false;closeModal();document.getElementById('practiceTitle').textContent=c.title+' · '+t.title;document.getElementById('practiceHelp').textContent='Answer each question, then review your result.';document.getElementById('practiceArea').classList.remove('hidden');document.getElementById('practiceResult').classList.add('hi<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
