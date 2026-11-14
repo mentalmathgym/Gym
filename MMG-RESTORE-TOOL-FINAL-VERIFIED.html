@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>MMG Progress Recovery Tool — FINAL VERIFIED</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#e8edf5;font:16px/1.5 system-ui,-apple-system,Roboto,sans-serif;padding:12px;max-width:640px;margin:0 auto}
+h1{font-size:20px;margin:6px 0 2px}h2{font-size:17px;margin:0 0 8px}
+.sub{color:#9fb0c8;font-size:13px;margin-bottom:12px}
+.card{background:#182236;border:1px solid #2a3a57;border-radius:14px;padding:14px;margin-bottom:12px}
+.btn{display:block;width:100%;padding:13px;border:0;border-radius:10px;background:#3b82f6;color:#fff;font-size:16px;font-weight:600;margin-top:8px}
+.btn.sec{background:#2a3a57}.btn.warn{background:#d97706}.btn.red{background:#dc2626}.btn.green{background:#16a34a}
+.btn:disabled{opacity:.4}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}td,th{padding:6px 4px;border-bottom:1px solid #2a3a57;text-align:left;vertical-align:top;overflow-wrap:anywhere;word-break:break-word}#valid th:last-child,#valid td:last-child{width:30px;text-align:center}#verify th:last-child,#verify td:last-child{width:58px;text-align:center}code{overflow-wrap:anywhere;word-break:break-all}
+.ok{color:#4ade80;font-weight:700}.bad{color:#f87171;font-weight:700}.wn{color:#fbbf24;font-weight:700}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:700}
+.b-ok{background:#14532d;color:#bbf7d0}.b-bad{background:#7f1d1d;color:#fecaca}.b-wn{background:#78350f;color:#fde68a}
+.big{display:flex;gap:8px;margin:8px 0}.big div{flex:1;background:#101827;border-radius:10px;padding:10px;text-align:center}
+.big b{display:block;font-size:26px}.big small{color:#9fb0c8}
+label{display:block;margin:8px 0;font-size:15px}
+textarea,select{width:100%;background:#101827;color:#e8edf5;border:1px solid #2a3a57;border-radius:8px;padding:8px;font-size:14px}
+textarea{height:90px;font-family:monospace}
+.muted{color:#9fb0c8;font-size:13px}
+#whyBox{color:#fbbf24;font-size:13px;margin-top:6px}
+.warnbox{background:#3b1010;border:1px solid #f87171;border-radius:10px;padding:10px;margin:8px 0;font-size:14px}
+.warnbox li{margin:4px 0}
+/* */.hidden{display:none!important}.btn{min-height:48px}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}.pass{color:#4ade80;font-weight:700}.fail{color:#f87171;font-weight:700}.na{color:#fbbf24;font-weight:700}.verdict{font-size:20px;font-weight:800;margin:8px 0}
+pre{white-space:pre-wrap;word-break:break-all;background:#101827;border-radius:8px;padding:8px;font-size:12px;max-height:200px;overflow:auto}
+</style>
+</head>
+<body>
+<h1>🏋️ MMG Progress Recovery Tool · FINAL VERIFIED</h1>
+<div class="sub">The Mental Math Gym · दोन्ही Local Storage records: <code>mmg_v2_data</code> + <code>mmg_book_library_progress_v1</code></div>
+
+<div class="card" id="envCard"><h2>० · ही जागा तपासा (Origin)</h2><div id="env" role="status" aria-live="polite"></div></div>
+<div id="emergency" class="warnbox hidden" role="alert" tabindex="-1"></div>
+<div id="journalBox" class="warnbox hidden" role="alert"></div>
+
+<div class="card"><h2>१ · सध्याचा डेटा (Current)</h2><div id="cur"></div>
+<button class="btn sec" id="btnRescan">पुन्हा तपासा</button></div>
+
+<div class="card"><h2>२ · Recovery फाइल तपासणी</h2>
+<div id="recInfo"></div>
+<p class="muted">🔒 तुमचा Recovery डेटा या HTML मध्ये <b>ठेवलेला नाही</b>. मूळ फाइल <code>MMG-recovered-progress-backup-copy.json</code> येथे निवडा. फाइल बाहेर कुठेही पाठवली जात नाही; ती फक्त या फोनवरच वाचली जाते. तिची SHA-256 मूळ फाइलशी जुळली तरच Restore चालू होतो.</p>
+<label>Recovery JSON फाइल निवडा:<input type="file" id="file" accept=".json,application/json,text/plain,*/*"></label>
+<label>किंवा फाइलचा संपूर्ण मजकूर जसाच्या तसा paste करा (ऐच्छिक; SHA-256 साठी एकही अक्षर बदलता कामा नये):<textarea id="paste" placeholder="येथे JSON paste करा"></textarea></label>
+<button class="btn sec" id="btnPaste">Paste केलेला JSON वापरा</button>
+<div id="valid"></div></div>
+
+<div class="card"><h2>३ · Backup (Restore आधी अनिवार्य)</h2>
+<div class="muted">सध्याच्या दोन्ही records च्या exact copies. फक्त डाउनलोड करणे पुरेसे नाही: खाली ती फाइल निवडून Tool ला पडताळू द्या. पडताळणी झाल्याशिवाय Restore बटण चालू होत नाही (सध्या डेटा रिकामा असल्यास गरज नाही).</div>
+<button class="btn warn" id="btnBackup">⬇ ३अ · सध्याचा Backup डाउनलोड करा</button>
+<button class="btn sec" id="btnCopy">किंवा Backup Copy करा (Clipboard → Notes मध्ये paste करून ठेवा)</button>
+<div class="muted" style="margin-top:10px"><b>३ब · पडताळा:</b> डाउनलोड केलेली Backup फाइल निवडा. Tool ती सध्याच्या डेटाशी अक्षरशः जुळते का तपासते.</div>
+<label><input type="file" id="bkFile" accept=".json,application/json,text/plain,*/*"></label>
+<label>किंवा Copy केलेला Backup मजकूर paste करा:<textarea id="bkPaste" placeholder="Backup JSON येथे paste करा"></textarea></label>
+<button class="btn sec" id="btnBkPaste">Paste केलेला Backup पडताळा</button>
+<label><input type="checkbox" id="chkSafe"> ही पडताळलेली Backup मी सुरक्षित ठिकाणी ठेवली आहे</label>
+<div id="badBox" class="warnbox hidden" role="alert"><b>⚠ सध्याच्या डेटात विसंगती/दोष आढळले</b><ul id="badList"></ul>असा डेटा Backup मध्ये जसाच्या तसा जतन होतो, पण Rollback फाइल म्हणून पुन्हा स्वीकारला जाणार नाही (कारण ती अवैध ठरते). पुढे जायचे असल्यास पुष्टी द्या.<label><input type="checkbox" id="chkBad"> मला समजले: सध्याचा डेटा नियमांत बसत नाही; Backup फाइल मी जपून ठेवेन</label></div>
+<div id="emptyBox" class="warnbox hidden" role="alert"><b>⚠ सध्याचा Local Storage पूर्ण रिकामा आहे.</b><br>याचा अर्थ एक तर डेटा खरोखर गेला आहे, किंवा तुम्ही चुकीचा browser/profile/Incognito वापरत आहात. रिकाम्या storage साठी Backup फाइलमध्ये काहीही नसते, म्हणून <b>Rollback फक्त "रिकामे" या स्थितीवर परत नेईल</b> (दुसरी वैध Snapshot/Backup फाइल असल्याशिवाय). कृपया ही बाब मान्य करा.
+<label><input type="checkbox" id="chkEmpty"> मला हे समजले; मी Gym साइट नेहमी वापरतो तोच Chrome/profile (Incognito नाही) वापरत आहे</label></div>
+<div id="bkStatus" class="muted" role="status" aria-live="polite"></div></div>
+
+<div class="card"><h2>४ · Restore</h2>
+<label><input type="radio" name="mode" value="merge" checked> <b>Smart Merge (शिफारस)</b> – जुना Progress परत + सध्याचे फक्त नवीन sessions जोडते. Duplicate मोजले जात नाहीत; पुन्हा चालवल्यास तोच निकाल.</label>
+<label><input type="radio" name="mode" value="replace"> <b>Exact Replace</b> – दोन्ही records recovery फाइलप्रमाणे हुबेहूब बदलते (सध्याचे नवीन sessions जातात, पण Rollback मध्ये राहतात).</label>
+<div id="preview"></div>
+<label><input type="checkbox" id="chkTabs"> Gym वेबसाइटचे इतर सर्व tabs/windows बंद केले आहेत</label>
+<button class="btn green" id="btnRestore" disabled>▶ Restore करा</button><div id="whyBox" role="status" aria-live="polite"></div></div>
+
+<div class="card"><h2>५ · तपासणी (Verification)</h2><div id="verify" class="muted" role="status" aria-live="polite">Restore झाल्यावर किंवा "आत्ता तपासा" दाबल्यावर येथे निकाल दिसेल.</div>
+<button class="btn sec" id="btnVerify">आत्ता तपासा (सध्याची स्थिती)</button></div>
+
+<div class="card"><h2>६ · Rollback</h2>
+<div class="muted">Restore आधीची स्थिती परत आणा.</div>
+<select id="rollSel"></select>
+<button class="btn red" id="btnRollback">↩ निवडलेल्या Snapshot वर Rollback</button>
+<label>किंवा या Tool ने बनवलेली Backup/Snapshot फाइल निवडा (पूर्ण तपासणीनंतरच स्वीकारली जाते):<input type="file" id="rollFile" accept=".json,application/json,text/plain,*/*"></label>
+<button class="btn sec" id="btnClearRolls">🗑 Rollback history साफ करा (सर्वात नवीन वैध Snapshot राहील)</button>
+<div id="rollStatus" class="muted" role="status" aria-live="polite"></div></div>
+
+<div class="card"><h2>Activity Log</h2><div class="muted">प्रत्येक महत्त्वाची कृती नोंदवली जाते (या Tool च्या स्वतंत्र key मध्ये; Gym साइटच्या दोन records ला स्पर्श नाही).</div><button class="btn sec" id="btnLogCopy">Log Copy करा</button><button class="btn sec" id="btnLogDl">Log डाउनलोड करा</button><pre id="log"></pre></div>
+
+<script>
+'use strict';
+const KA='mmg_v2_data',KB='mmg_book_library_progress_v1',ROLL='mmg_restore_tool_rollback_v1',JKEY='mmg_restore_tool_journal_v1',ROLLBAD='mmg_restore_tool_rollback_corrupt_v1';
+const EXPECT={att:172,cor:93,acc:54,dAtt:35,dCor:30,bAtt:137,bCor:63,dHist:4,bHist:13};
+const $=id=>document.getElementById(id);
+const clone=x=>JSON.parse(JSON.stringify(x));
+const safe=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?Math.floor(n):0};
+let recovery=null,recSource='',backupRaw=null,bkNote='',mergeBlocked=false,hashState='na',busy=false,extChange=0,emergencySnap=null;
+const RECOVERY_SHA='14ed69700ec43486730a3304dd889acc51f67a577aeb73623377c17d7580bae0';
+const logEl=$('log'),LOGKEY='mmg_restore_tool_log_v1';
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return undefined}} /* undefined = वाचता आला नाही (null = key नाही) */
+let logLines=[];try{logLines=JSON.parse(lsGet(LOGKEY)||'[]');if(!Array.isArray(logLines))logLines=[]}catch(e){logLines=[]}
+function renderLog(){logEl.textContent=logLines.join('\n')}
+function log(m){logLines.unshift(new Date().toISOString()+'  '+m);logLines=logLines.slice(0,200);try{localStorage.setItem(LOGKEY,JSON.stringify(logLines))}catch(e){}renderLog()}
+/* ---------- शुद्ध (synchronous) SHA-256: crypto.subtle वर अवलंबून नाही ---------- */
+const SHA_C=(function(){const k=[],p=[];for(let n=2;k.length<64;n++){let pr=true;for(let i=2;i*i<=n;i++)if(n%i===0){pr=false;break}if(pr){p.push(n);k.push(Math.floor((Math.cbrt(n)%1)*4294967296))}}return{k,h:p.slice(0,8).map(n=>Math.floor((Math.sqrt(n)%1)*4294967296))}})();
+function sha256(str){
+  const K=SHA_C.k,H=SHA_C.h.slice(),by=new TextEncoder().encode(String(str)),l=by.length,nb=((l+9+63)>>6)<<6,w=new Uint8Array(nb);
+  w.set(by);w[l]=0x80;const dv=new DataView(w.buffer);dv.setUint32(nb-8,Math.floor(l/0x20000000));dv.setUint32(nb-4,(l<<3)>>>0);
+  const W=new Uint32Array(64),rr=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let o=0;o<nb;o+=64){
+    for(let i=0;i<16;i++)W[i]=dv.getUint32(o+i*4);
+    for(let i=16;i<64;i++){const a=W[i-15],c=W[i-2];W[i]=(W[i-16]+(rr(a,7)^rr(a,18)^(a>>>3))+W[i-7]+(rr(c,17)^rr(c,19)^(c>>>10)))|0}
+    let a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(let i=0;i<64;i++){const t1=(h+(rr(e,6)^rr(e,11)^rr(e,25))+((e&f)^(~e&g))+K[i]+W[i])|0,t2=((rr(a,2)^rr(a,13)^rr(a,22))+((a&b)^(a&c)^(b&c)))|0;h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0}
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+  }
+  return H.map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- origin ---------- */
+const LIVE='https://mentalmathgym.github.io';
+const isLive=location.origin===LIVE;
+const isTest=['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+const writable=isLive||isTest;
+const LS_OK=(function(){try{localStorage.setItem('__t','1');localStorage.removeItem('__t');return true}catch(e){return false}})();
+function lsOK(){return LS_OK}
+function renderEnv(){
+  let h='<table><tr><td>Origin</td><td><code>'+esc(location.origin)+'</code></td></tr></table>';
+  if(isLive)h+='<p><span class="badge b-ok">LIVE साइटचाच Origin ✓</span> येथे केलेला Restore Gym साइटला थेट दिसेल.</p>';
+  else if(isTest)h+='<p><span class="badge b-wn">TEST Origin</span> हा फक्त चाचणीसाठी आहे; Live साइटवर परिणाम होणार नाही.</p>';
+  else h+='<p><span class="badge b-bad">चुकीचा Origin ✗</span> ही फाइल <code>'+esc(location.origin)+'</code> वर उघडली आहे. Local Storage प्रत्येक वेबसाइटचा वेगळा असतो, म्हणून येथे Restore केल्यास <b>Gym साइटवर काहीही बदलणार नाही</b>. Restore/Backup/Rollback बटणे बंद ठेवली आहेत. <code>'+LIVE+'/Gym/</code> वरून ही फाइल उघडा.</p>';
+  if(!lsOK())h+='<p class="bad">Local Storage उपलब्ध नाही (Private/Incognito mode?). सामान्य Chrome tab वापरा.</p>';
+  $('env').innerHTML=h;
+}
+
+/* ---------- parsing/stats ---------- */
+function parseRaw(raw){if(raw===undefined)return{raw:null,val:null,ok:false,err:'Storage वाचता आला नाही'};if(raw===null)return{raw:null,val:null,ok:true,empty:true};try{return{raw,val:JSON.parse(raw),ok:true}}catch(e){return{raw,val:null,ok:false,err:e.message}}}
+function statsFrom(a,b){
+  const pa=(a&&a.progress)||{},pb=b||{};
+  const dA=safe(pa.attempted),dC=Math.min(safe(pa.correct),dA),bA=safe(pb.attempted),bC=Math.min(safe(pb.correct),bA);
+  const att=dA+bA,cor=dC+bC;
+  return{dA,dC,bA,bC,att,cor,acc:att?Math.round(cor/att*100):0,dH:Array.isArray(pa.history)?pa.history.length:0,bH:Array.isArray(pb.history)?pb.history.length:0};
+}
+/* Canonical fingerprint: ID असो वा नसो, एकाच session चे सर्व रूपे एकाच fingerprint ला जुळतात.
+   Book: timestamp(ts / at) | chapter | mode | attempted | correct
+   Data: timestamp(completedAt / ts) | chapterId | topicId | attempted | correct
+   Timestamp ts आणि at/completedAt या दोन्हींतून (उपलब्ध असतील तसे) काढले जाते; कोणतीही एक जुळली तरी तीच नोंद. */
+const normS=s=>String(s==null?'':s).trim().replace(/\s+/g,' ').toLowerCase();
+function tsList(x){const o=[];const n=Number(x&&x.ts);if(Number.isFinite(n)&&n>0)o.push(String(Math.round(n)));
+  const p=Date.parse(x&&(x.at||x.completedAt));if(Number.isFinite(p)&&!o.includes(String(p)))o.push(String(p));
+  if(!o.length)o.push('nots:'+normS(x&&(x.at||x.completedAt)));return o}
+const fpsB=x=>tsList(x).map(t=>[t,normS(x&&(x.chapter||x.chapterTitle)),normS(x&&x.mode),safe(x&&x.attempted),safe(x&&x.correct)].join('|'));
+const fpsA=x=>tsList(x).map(t=>[t,normS(x&&x.chapterId),normS(x&&x.topicId),safe(x&&x.attempted),safe(x&&x.correct)].join('|'));
+const idOf=x=>x&&x.id!=null&&String(x.id)!==''?String(x.id):'';
+function mkIndex(fps){const f=new Set(),i=new Set();return{
+  has(x){const id=idOf(x);return fps(x).some(k=>f.has(k))||(id!==''&&i.has(id))},
+  add(x){fps(x).forEach(k=>f.add(k));const id=idOf(x);if(id)i.add(id)}}}
+function dupCount(arr,fps){const ix=mkIndex(fps);let d=0;arr.forEach(x=>{if(ix.has(x))d++;else ix.add(x)});return d}
+const dupA=a=>dupCount(a||[],fpsA),dupB=a=>dupCount(a||[],fpsB);
+const tsKey=x=>Math.max(...tsList(x).map(Number).filter(Number.isFinite),0);
+
+/* ---------- current ---------- */
+function readCurrent(){const A=parseRaw(lsGet(KA)),B=parseRaw(lsGet(KB));return{A,B}}
+function renderCurrent(){
+  const {A,B}=readCurrent();let h='';
+  const row=(k,p)=>'<tr><td><code>'+k+'</code></td><td>'+(p.empty?'<span class="wn">नाही (रिकामे)</span>':p.ok?'आहे · '+p.raw.length+' अक्षरे':'<span class="bad">खराब JSON: '+esc(p.err)+'</span>')+'</td></tr>';
+  h+='<table>'+row(KA,A)+row(KB,B)+'</table>';
+  const s=statsFrom(A.val,B.val);
+  h+='<div class="big"><div><b>'+s.att+'</b><small>Attempted</small></div><div><b>'+s.cor+'</b><small>Correct</small></div><div><b>'+s.acc+'%</b><small>Accuracy</small></div></div>';
+  h+='<div class="muted">Data: '+s.dA+'/'+s.dC+' · Book: '+s.bA+'/'+s.bC+'</div>';
+  const iss=curIssues();
+  h+=iss.length?'<div class="muted"><span class="bad">रचना तपासणी: '+iss.length+' दोष</span></div>':((A.empty&&B.empty)?'':'<div class="muted"><span class="ok">रचना तपासणी ✓</span> (counters, byChapter, History, Duplicate)</div>');
+  if(B.ok&&!B.empty){const rn=rowNotes(KB,B.val);if(rn)h+='<div class="muted">'+esc(rn)+'</div>'}
+  $('cur').innerHTML=h;
+  $('badList').innerHTML=iss.map(x=>'<li>'+esc(x)+'</li>').join('');
+  $('badBox').classList.toggle('hidden',!iss.length);
+  return {A,B,s};
+}
+
+/* ---------- recovery validation ---------- */
+/* ===== Recovery Validation (सर्व अनिवार्य तपासण्या पास झाल्याशिवाय Restore/Merge/Replace तिन्ही बंद) ===== */
+const isObj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
+const isCnt=n=>typeof n==='number'&&Number.isInteger(n)&&n>=0;
+function deepFreeze(o){if(o&&typeof o==='object'&&!Object.isFrozen(o)){Object.freeze(o);Object.values(o).forEach(deepFreeze)}return o}
+/* ===== validateRecord: एका record ची सखोल तपासणी (Recovery/Current/Snapshot साठी एकच नियम) ===== */
+const CATS={STRUCT:'रचना',NESTED:'Nested रचना',COUNTERS:'Counters',BYCHAPTER:'byChapter',HISTORY:'History',ROWS:'Book rows',DUP:'Duplicate'};
+const CATL={STRUCT:' (पूर्ण रचना)',NESTED:' (chapters/topics/lessons/questions)',COUNTERS:' (पूर्णांक, correct ≤ attempted)',BYCHAPTER:' (बेरीज = counters)',HISTORY:' (वैध नोंदी, ≤ counters)',ROWS:' (rows/item रचना, गुण जुळणी)',DUP:' (Duplicate नाहीत)'};
+const DANGER=['__proto__','constructor','prototype'];
+const isStr=x=>typeof x==='string',isNeStr=x=>typeof x==='string'&&x.trim()!=='';
+const validTime=x=>isNeStr(x)&&Number.isFinite(Date.parse(x));
+const isNum=x=>typeof x==='number'&&Number.isFinite(x);
+/* सखोल Nested तपासणी. अतिरिक्त (optional/अज्ञात) fields नाकारले जात नाहीत; काहीही बदलले/शोधले जात नाही. */
+function nestedChecks(key,v,e){
+  const dupGuard=(set,id,p)=>{if(set.has(id))e('NESTED',p+' Duplicate id "'+id+'"');set.add(id)};
+  if(key===KA){
+    const seenC=new Set();
+    (Array.isArray(v.chapters)?v.chapters:[]).forEach((c,i)=>{
+      const p='chapters['+i+']';
+      if(!isObj(c)){e('NESTED',p+' object नाही');return}
+      if(!isNeStr(c.id))e('NESTED',p+'.id रिकामा/string नाही');else{dupGuard(seenC,c.id,p);if(DANGER.includes(c.id))e('NESTED',p+'.id धोकादायक')}
+      if(!isStr(c.title))e('NESTED',p+'.title string नाही');
+      if(!isStr(c.description))e('NESTED',p+'.description string नाही');
+      if(c.order!==undefined&&!isNum(c.order))e('NESTED',p+'.order संख्या नाही');
+      if(!Array.isArray(c.topics)){e('NESTED',p+'.topics array नाही');return}
+      const seenT=new Set();
+      c.topics.forEach((t,j)=>{
+        const tp=p+'.topics['+j+']';
+        if(!isObj(t)){e('NESTED',tp+' object नाही');return}
+        if(!isNeStr(t.id))e('NESTED',tp+'.id रिकामा/string नाही');else dupGuard(seenT,t.id,tp);
+        if(!isStr(t.title))e('NESTED',tp+'.title string नाही');
+        if(!Array.isArray(t.lessons))e('NESTED',tp+'.lessons array नाही');
+        else{const sl=new Set();t.lessons.forEach((l,k)=>{const lp=tp+'.lessons['+k+']';
+          if(!isObj(l)){e('NESTED',lp+' object नाही');return}
+          if(!isNeStr(l.id))e('NESTED',lp+'.id रिकामा/string नाही');else dupGuard(sl,l.id,lp);
+          if(!isStr(l.title))e('NESTED',lp+'.title string नाही');
+          if(!isStr(l.content))e('NESTED',lp+'.content string नाही')})}
+        if(!Array.isArray(t.questions))e('NESTED',tp+'.questions array नाही');
+        else{const sq=new Set();t.questions.forEach((q,k)=>{const qp=tp+'.questions['+k+']';
+          if(!isObj(q)){e('NESTED',qp+' object नाही');return}
+          if(!isNeStr(q.id))e('NESTED',qp+'.id रिकामा/string नाही');else dupGuard(sq,q.id,qp);
+          if(!isNeStr(q.prompt))e('NESTED',qp+'.prompt रिकामा/string नाही');
+          if(!(isStr(q.answer)||isNum(q.answer)))e('NESTED',qp+'.answer string/संख्या नाही');
+          if(q.explanation!==undefined&&!isStr(q.explanation))e('NESTED',qp+'.explanation string नाही');
+          if(q.difficulty!==undefined&&!isStr(q.difficulty))e('NESTED',qp+'.difficulty string नाही')})}
+      });
+    });
+    const h=isObj(v.progress)&&Array.isArray(v.progress.history)?v.progress.history:[];
+    h.forEach((x,i)=>{if(!isObj(x))return;const p='progress.history['+i+']';
+      if(!isNeStr(x.id))e('HISTORY',p+'.id रिकामा/string नाही');
+      if(!isNeStr(x.topicId))e('HISTORY',p+'.topicId रिकामा/string नाही');
+      if(!validTime(x.completedAt))e('HISTORY',p+'.completedAt (timestamp) अवैध/नाही');
+      if(x.chapterTitle!==undefined&&!isStr(x.chapterTitle))e('HISTORY',p+'.chapterTitle string नाही');
+      if(x.topicTitle!==undefined&&!isStr(x.topicTitle))e('HISTORY',p+'.topicTitle string नाही');
+      if(x.accuracy!==undefined){if(!isNum(x.accuracy)||x.accuracy<0||x.accuracy>100)e('HISTORY',p+'.accuracy 0–100 संख्या नाही');
+        else if(isCnt(x.attempted)&&isCnt(x.correct)&&x.attempted>0&&x.accuracy!==Math.round(x.correct/x.attempted*100))e('HISTORY',p+'.accuracy ('+x.accuracy+') ≠ correct/attempted')}});
+  }else{
+    const h=Array.isArray(v.history)?v.history:[];
+    h.forEach((x,i)=>{if(!isObj(x))return;const p='history['+i+']';
+      if(!isNeStr(x.chapter))e('HISTORY',p+'.chapter रिकामा/string नाही');
+      if(!isNeStr(x.mode))e('HISTORY',p+'.mode रिकामा/string नाही');
+      const hasAt=x.at!==undefined,hasTs=x.ts!==undefined;
+      if(!hasAt&&!hasTs)e('HISTORY',p+' timestamp (at/ts) नाही');
+      if(hasAt&&!validTime(x.at))e('HISTORY',p+'.at अवैध timestamp');
+      if(hasTs&&!(isNum(x.ts)&&x.ts>0))e('HISTORY',p+'.ts अवैध timestamp');
+      if(hasAt&&hasTs&&validTime(x.at)&&isNum(x.ts)&&Math.round(x.ts)!==Date.parse(x.at))e('HISTORY',p+' ts व at परस्परविरोधी timestamp');
+      if(x.id!==undefined&&!isNeStr(x.id))e('HISTORY',p+'.id रिकामा/string नाही');
+      if(x.chapterId!==undefined&&!isNeStr(x.chapterId))e('HISTORY',p+'.chapterId रिकामा/string नाही');
+      if(x.rows!==undefined){
+        if(!Array.isArray(x.rows)){e('ROWS',p+'.rows array नाही');return}
+        let okN=0;
+        x.rows.forEach((r,k)=>{const rp=p+'.rows['+k+']';
+          if(!isObj(r)){e('ROWS',rp+' object नाही');return}
+          if(!isStr(r.q))e('ROWS',rp+'.q string नाही');
+          const pair=(names,label)=>{const present=names.filter(nm=>r[nm]!==undefined);
+            if(!present.length)e('ROWS',rp+': '+label+' ('+names.join(' किंवा ')+') नाही');
+            present.forEach(nm=>{const z=r[nm];if(!(isStr(z)||isNum(z)))e('ROWS',rp+'.'+nm+' string किंवा संख्या असावे (आढळले: '+(z===null?'null':Array.isArray(z)?'array':typeof z)+')')})};
+          pair(['your','you'],'तुमचे उत्तर');pair(['correct','right'],'बरोबर उत्तर');
+          if(typeof r.ok!=='boolean')e('ROWS',rp+'.ok boolean नाही');else if(r.ok)okN++;
+          if(r.item!==undefined&&(!isObj(r.item)||!isStr(r.item.q)))e('ROWS',rp+'.item रचना अवैध');});
+        if(x.rows.length>0&&isCnt(x.attempted)&&isCnt(x.correct)){
+          if(x.rows.length!==x.attempted)e('ROWS',p+': rows संख्या '+x.rows.length+' ≠ attempted '+x.attempted);
+          if(okN!==x.correct)e('ROWS',p+': rows मधील बरोबर '+okN+' ≠ correct '+x.correct)}
+      }});
+    if(v.synced!==undefined&&(!Array.isArray(v.synced)||v.synced.some(z=>!(isStr(z)||isNum(z)))))e('STRUCT','synced (string/संख्या) array नाही');
+  }
+}
+function validateRecord(key,v,o){
+  o=o||{};const E=[],e=(c,m)=>E.push({c,m});
+  if(!isObj(v)){e('STRUCT','object नाही');return E}
+  let cA,cC,hist;
+  if(key===KA){
+    if(v.version!==2)e('STRUCT','version=2 अपेक्षित (आहे: '+String(v.version)+')');
+    if(!Array.isArray(v.chapters))e('STRUCT','chapters array नाही');
+    const p=v.progress;if(!isObj(p)){e('STRUCT','progress object नाही');return E}
+    cA=p.attempted;cC=p.correct;hist=p.history;
+    if(!Array.isArray(hist))e('STRUCT','progress.history array नाही');
+    if(!isObj(p.byChapter))e('STRUCT','progress.byChapter object नाही');
+  }else{cA=v.attempted;cC=v.correct;hist=v.history;if(!Array.isArray(hist))e('STRUCT','history array नाही')}
+  const cOK=isCnt(cA)&&isCnt(cC);
+  if(!cOK)e('COUNTERS','attempted/correct ऋण नसलेले पूर्णांक नाहीत');else if(cC>cA)e('COUNTERS','correct ('+cC+') > attempted ('+cA+')');
+  let hOK=Array.isArray(hist);
+  if(hOK){
+    let bad=0,nonObj=0;
+    hist.forEach(x=>{if(!isObj(x)){nonObj++;return}if(!isCnt(x.attempted)||!isCnt(x.correct)||x.correct>x.attempted)bad++;else if(key===KA&&(typeof x.chapterId!=='string'||!x.chapterId.trim()))bad++});
+    if(nonObj)e('HISTORY',nonObj+' नोंद(ी) object नाहीत');
+    if(bad)e('HISTORY',bad+' नोंद(ी) अवैध (attempted/correct/chapterId)');
+    if(nonObj||bad)hOK=false;
+  }
+  if(cOK&&hOK){
+    const sh=sumHist(hist);
+    if(sh.a>cA||sh.c>cC)e('HISTORY','History बेरीज '+sh.a+'/'+sh.c+' > counters '+cA+'/'+cC);
+    if(o.strictBook&&key===KB&&(sh.a!==cA||sh.c!==cC))e('HISTORY','Book History बेरीज '+sh.a+'/'+sh.c+' ≠ counters '+cA+'/'+cC);
+  }
+  if(key===KA&&isObj(v.progress)&&isObj(v.progress.byChapter)){
+    let ba=0,bc=0,okb=true;
+    Object.keys(v.progress.byChapter).forEach(k=>{if(DANGER.includes(k)||!k.trim()){e('BYCHAPTER','अवैध/धोकादायक key "'+k+'"');okb=false;return}const x=v.progress.byChapter[k];if(!isObj(x)||!isCnt(x.attempted)||!isCnt(x.correct)||x.correct>x.attempted){okb=false;return}ba+=x.attempted;bc+=x.correct});
+    if(!okb)e('BYCHAPTER','byChapter मध्ये अवैध नोंदी');
+    else if(cOK&&(ba!==cA||bc!==cC))e('BYCHAPTER','byChapter बेरीज '+ba+'/'+bc+' ≠ Data counters '+cA+'/'+cC);
+  }
+  if(hOK){const d=(key===KA?dupA:dupB)(hist);if(d)e('DUP',d+' Duplicate नोंद(ी)')}
+  nestedChecks(key,v,e);
+  return E;
+}
+/* माहितीपूर्ण (blocking नाही): rows मधील उत्तरांचे प्रकार. अंकीय दिसणारे string (उदा. "1,500") फक्त वाचनासाठी अर्थ लावले जातात; साठवलेले मूल्य कधीही बदलत नाही. */
+const numOf=x=>{if(typeof x==='number')return Number.isFinite(x)?x:null;if(typeof x!=='string')return null;const t=x.trim().replace(/,/g,'');return /^-?\d+(\.\d+)?$/.test(t)?Number(t):null};
+function rowNotes(key,v){
+  if(key!==KB||!isObj(v)||!Array.isArray(v.history))return '';
+  let n=0,sA=0,sB=0,numeric=0,text=0,mism=0,withRows=0,legacy=0;
+  v.history.forEach(h=>{if(!isObj(h))return;if(!Array.isArray(h.rows)){legacy++;return}withRows++;
+    h.rows.forEach(r=>{if(!isObj(r))return;n++;if(r.your!==undefined||r.correct!==undefined)sA++;else sB++;
+      const y=r.your!==undefined?r.your:r.you,c=r.correct!==undefined?r.correct:r.right,ny=numOf(y),nc=numOf(c);
+      if(ny===null||nc===null)text++;else{numeric++;if((ny===nc)!==(r.ok===true))mism++}})});
+  return 'Book rows: '+withRows+' नोंदींमध्ये '+n+' rows (शैली your/correct: '+sA+', शैली you/right (cloud): '+sB+'); '+legacy+' जुन्या नोंदींना rows नाहीत (सामान्य). उत्तरे: '+numeric+' अंकीय (string/संख्या), '+text+' मजकूर; ok-विसंगती (फक्त माहिती): '+mism+'.';
+}
+function curIssues(){const out=[];[KA,KB].forEach(k=>{const raw=lsGet(k);if(raw===null)return;if(raw===undefined){out.push(k+': Storage वाचता आला नाही');return}let j;try{j=JSON.parse(raw)}catch(e){out.push(k+': JSON खराब');return}validateRecord(k,j).forEach(z=>out.push(k+' ['+CATS[z.c]+'] '+z.m))});return out}
+function validateRecovery(d){
+  const checks=[],notes=[];
+  const add=(n,got,exp,ok)=>checks.push({n,got:String(got),exp:String(exp),ok:!!ok});
+  const r=isObj(d)&&isObj(d.records)?d.records:{},a=r[KA],b=r[KB];
+  add('format = MMG-RECOVERED-LOCALSTORAGE',isObj(d)?String(d.format):'?','MMG-RECOVERED-LOCALSTORAGE',isObj(d)&&d.format==='MMG-RECOVERED-LOCALSTORAGE');
+  add('version = 1 (फाइल आवृत्ती)',isObj(d)?String(d.version):'?','1',isObj(d)&&d.version===1);
+  add('app = The Mental Math Gym',isObj(d)?String(d.app):'?','The Mental Math Gym',isObj(d)&&d.app==='The Mental Math Gym');
+  add('दोन्ही keys (mmg_v2_data, mmg_book_library_progress_v1) उपस्थित',(isObj(r)&&KA in r?'A ✓ ':'A ✗ ')+(isObj(r)&&KB in r?'B ✓':'B ✗'),'A ✓ B ✓',isObj(r)&&KA in r&&KB in r);
+  const aOK=isObj(a)&&Array.isArray(a.chapters)&&isObj(a.progress)&&Array.isArray(a.progress.history)&&isObj(a.progress.byChapter);
+  const bOK=isObj(b)&&Array.isArray(b.history);
+  add(KA+' रचना (chapters, progress, byChapter, history)',aOK?'आहे':'अयोग्य/नाही','आहे',aOK);
+  add(KB+' रचना (attempted, correct, history)',bOK?'आहे':'अयोग्य/नाही','आहे',bOK);
+  if(!(aOK&&bOK))return{ok:false,checks,notes,stats:null};
+  add(KA+' version = 2',String(a.version),'2',a.version===2);
+  const pa=a.progress;
+  const cntOK=isCnt(pa.attempted)&&isCnt(pa.correct)&&pa.correct<=pa.attempted&&isCnt(b.attempted)&&isCnt(b.correct)&&b.correct<=b.attempted;
+  add('Counters पूर्णांक, ≥0 आणि Correct ≤ Attempted',cntOK?'होय':'नाही','होय',cntOK);
+  const badEntries=[...pa.history,...b.history].filter(x=>!isObj(x)||!isCnt(x.attempted)||!isCnt(x.correct)||x.correct>x.attempted).length;
+  add('सर्व History नोंदी वैध (attempted/correct पूर्णांक, correct ≤ attempted)',badEntries+' अवैध','0 अवैध',badEntries===0);
+  if(!cntOK||badEntries)return{ok:false,checks,notes,stats:null};
+  const s=statsFrom(a,b),dh=sumHist(pa.history),bh=sumHist(b.history);
+  const bcA=Object.values(pa.byChapter).reduce((n,x)=>n+safe(x&&x.attempted),0),bcC=Object.values(pa.byChapter).reduce((n,x)=>n+safe(x&&x.correct),0);
+  add('byChapter बेरीज = Data counters',bcA+'/'+bcC,s.dA+'/'+s.dC,bcA===s.dA&&bcC===s.dC);
+  add('Data History बेरीज ≤ Data counters (जास्त असणे विसंगत)',dh.a+'/'+dh.c,'≤ '+s.dA+'/'+s.dC,dh.a<=s.dA&&dh.c<=s.dC);
+  add('Book History बेरीज = Book counters',bh.a+'/'+bh.c,s.bA+'/'+s.bC,bh.a===s.bA&&bh.c===s.bC);
+  const deep=validateRecord(KA,a).concat(validateRecord(KB,b,{strictBook:true}));
+  add('सखोल रचना तपासणी (validateRecord) दोष',deep.length+(deep.length?' ('+deep.map(z=>CATS[z.c]+': '+z.m).join('; ')+')':''),'0',deep.length===0);
+  const dups=dupA(pa.history)+dupB(b.history);
+  add('फाइलमध्येच Duplicate नोंदी',dups,0,dups===0);
+  const sm=isObj(d.summary)?d.summary:null;
+  add('summary विभाग उपलब्ध',sm?'आहे':'नाही','आहे',!!sm);
+  if(sm){
+    const pairs=[['summary Data Attempted',sm.dataAttempted,s.dA],['summary Data Correct',sm.dataCorrect,s.dC],['summary Book Attempted',sm.bookAttempted,s.bA],['summary Book Correct',sm.bookCorrect,s.bC],['summary एकूण Attempted',sm.totalAttempted,s.att],['summary एकूण Correct',sm.totalCorrect,s.cor],['summary Accuracy %',sm.accuracy,s.acc],['summary Data History संख्या',sm.normalHistory,s.dH],['summary Book History संख्या',sm.bookHistory,s.bH]];
+    pairs.forEach(([n,g,x])=>add(n+' = प्रत्यक्ष records',g,x,g===x));
+  }
+  [['Attempted (एकूण)',s.att,EXPECT.att],['Correct (एकूण)',s.cor,EXPECT.cor],['Accuracy %',s.acc,EXPECT.acc],['Data Attempted',s.dA,EXPECT.dAtt],['Data Correct',s.dC,EXPECT.dCor],['Book Attempted',s.bA,EXPECT.bAtt],['Book Correct',s.bC,EXPECT.bCor],['Data History नोंदी',s.dH,EXPECT.dHist],['Book History नोंदी',s.bH,EXPECT.bHist]].forEach(([n,g,x])=>add('अपेक्षित '+n,g,x,g===x));
+  if(dh.a<s.dA||dh.c<s.dC)notes.push('ℹ <b>'+KA+'</b>: History बेरीज '+dh.a+'/'+dh.c+', पण counters '+s.dA+'/'+s.dC+' → History अपूर्ण आहे. Counters '+s.dA+'/'+s.dC+' जसेच्या तसे जतन केले जातात; History वरून Counters पुन्हा मोजले जात नाहीत.');
+  return{ok:checks.every(c=>c.ok),checks,notes,stats:s};
+}
+function loadRecovery(text,src){const embedded=true; /* SHA-256 प्रत्येक स्रोतासाठी (फाइल/paste) अनिवार्य */
+  recovery=null;recSource=src;hashState='na';
+  let d=null,v,hx='';
+  try{
+    if(text instanceof Error)throw text;
+    if(typeof text!=='string'||text.length>MAXB)throw new Error('फाइल/मजकूर खूप मोठा किंवा अयोग्य (कमाल '+MAXB+')');
+    try{d=JSON.parse(text)}catch(e){throw new Error('JSON वाचता आला नाही: '+e.message)}
+    v=validateRecovery(d);
+    hx=sha256(text);
+    if(embedded){ /* Embedded डेटासाठी SHA-256 अनिवार्य तपासणी */
+      const same=hx===RECOVERY_SHA;hashState=same?'ok':'bad';
+      v.checks.push({n:'फाइलची SHA-256 = मूळ Recovery फाइलची (अनिवार्य)',got:hx.slice(0,16)+'…',exp:RECOVERY_SHA.slice(0,16)+'…',ok:same});
+      if(!same)v.ok=false;
+    }
+    if(v.ok){try{recovery={meta:deepFreeze(d),A:d.records[KA],B:d.records[KB],text:embedded?text:null,embedded:!!embedded}}catch(e){recovery=null;v={ok:false,checks:[{n:'फाइल प्रक्रिया',got:e.message,exp:'सामान्य रचना',ok:false}],notes:[],stats:null}}}
+  }catch(e){v={ok:false,checks:[{n:'फाइल वाचन/तपासणी',got:e.message,exp:'वैध Recovery JSON',ok:false}],notes:[],stats:null}}
+  let h='<table><tr><th>अनिवार्य तपासणी</th><th>मिळाले</th><th>अपेक्षित</th><th></th></tr>';
+  v.checks.forEach(c=>h+='<tr><td>'+esc(c.n)+'</td><td>'+esc(c.got)+'</td><td>'+esc(c.exp)+'</td><td class="'+(c.ok?'ok':'bad')+'">'+(c.ok?'✓':'✗')+'</td></tr>');
+  h+='</table><div id="shaInfo" class="muted">'+(hx?'SHA-256: <code>'+hx+'</code>':'')+'</div>';
+  if(v.ok){
+    h+='<p class="ok">✓ सर्व अनिवार्य तपासण्या पास: 172 / 93 / 54%</p>';
+    if(v.notes.length)h+='<div class="muted">'+v.notes.join('<br>')+'</div>';
+    h+='<div class="muted">'+esc(rowNotes(KB,d.records[KB]))+'</div>';
+    $('recInfo').innerHTML='<span class="badge b-ok">फाइल वैध</span> '+esc(src)+'<div class="muted">exportedAt: '+esc(d.exportedAt||'?')+' · sourceOrigin: '+esc(d.sourceOrigin||'?')+'</div>';
+    log('Recovery वैध: '+src+' → '+v.stats.att+'/'+v.stats.cor+' ('+v.stats.acc+'%)'+(embedded?' · SHA-256 ✓':''));
+  }else{
+    h+='<div class="warnbox" role="alert"><b>⛔ Recovery Validation अयशस्वी.</b> Restore, Smart Merge आणि Exact Replace तिन्ही बंद आहेत. काहीही बदललेले नाही. अयशस्वी तपासण्या वर ✗ ने दाखवल्या आहेत. योग्य मूळ फाइल निवडा.</div>';
+    $('recInfo').innerHTML='<span class="badge b-bad">अयोग्य/अपूर्ण फाइल</span> '+esc(src);
+    log('Recovery नाकारली ('+src+'): '+v.checks.filter(c=>!c.ok).map(c=>c.n).join('; '));
+  }
+  $('valid').innerHTML=h;
+  renderPreview();updateButtons();
+}
+
+/* ---------- merge ---------- */
+const byDesc=f=>(x,y)=>String(f(y)||'').localeCompare(String(f(x)||''));
+/* ---- Merge सुरक्षा तपासणी: counters आणि History जुळत नसल्यास Merge थांबतो ---- */
+function sumHist(h){let a=0,c=0;(Array.isArray(h)?h:[]).forEach(x=>{const xa=safe(x&&x.attempted);a+=xa;c+=Math.min(safe(x&&x.correct),xa)});return{a,c}}
+function cnt(o){const a=safe(o&&o.attempted);return{a,c:Math.min(safe(o&&o.correct),a)}}
+function guardKey(name,cur,rec,fps){
+  const ch=Array.isArray(cur.history)?cur.history:[],rh=Array.isArray(rec.history)?rec.history:[];
+  const cc=cnt(cur),rc=cnt(rec),cs=sumHist(ch),rs=sumHist(rh);
+  const oa=cc.a-cs.a,oc=cc.c-cs.c,ra=rc.a-rs.a,rcor=rc.c-rs.c;
+  const desc='<b>'+name+'</b>: counters '+cc.a+'/'+cc.c+', History बेरीज '+cs.a+'/'+cs.c;
+  if(oa<0||oc<0)return desc+' → History ची बेरीज counters पेक्षा जास्त आहे; डेटा विसंगत.';
+  if(oa!==0||oc!==0){
+    const ix=mkIndex(fps);ch.forEach(x=>ix.add(x));
+    const inherits=rh.every(x=>ix.has(x));
+    if(!(inherits&&oa===ra&&oc===rcor))return desc+' → '+oa+' Attempted / '+oc+' Correct History शिवाय आहेत. ते Recovery मधील आहेत की नवीन प्रयत्न हे सिद्ध करता येत नाही; म्हणून दुहेरी मोजणी किंवा प्रयत्न गमावणे टाळता येईल याची खात्री नाही.';
+  }
+  if(ra>0||rcor>0){ // Recovery मध्येही History शिवाय जुने counters आहेत
+    const ix=mkIndex(fps);rh.forEach(x=>ix.add(x));
+    const minRec=rh.length?Math.min(...rh.map(tsKey)):Infinity;
+    const old=ch.filter(x=>x&&typeof x==='object'&&!ix.has(x)&&!(tsKey(x)>=minRec));
+    if(old.length)return desc+' → '+old.length+' नोंद(ी) Recovery च्या सर्वात जुन्या History नोंदीपेक्षा जुन्या/अनिश्चित वेळेच्या आहेत; त्या Recovery च्या History शिवायच्या जुन्या counters मध्ये आधीच मोजलेल्या असू शकतात.';
+  }
+  return null;
+}
+const looseA=x=>tsList(x).map(t=>[t,normS(x&&x.chapterId),normS(x&&x.topicId)].join('|'));
+const looseB=x=>tsList(x).map(t=>[t,normS(x&&(x.chapter||x.chapterTitle)),normS(x&&x.mode)].join('|'));
+const hasTs=x=>!tsList(x)[0].startsWith('nots:');
+/* अस्पष्टता तपासणी: Duplicate सुरक्षितपणे ओळखता येत नसल्यास Merge थांबतो */
+function ambiguity(name,cur,rec,fps,loose,isA,known){
+  const ch=Array.isArray(cur.history)?cur.history:[],rh=Array.isArray(rec.history)?rec.history:[];
+  const block=[],info=[],tag='<b>'+name+'</b>: ';
+  const nonObj=ch.filter(x=>!isObj(x)).length;if(nonObj)block.push(tag+nonObj+' अवैध History नोंद(ी).');
+  const objs=ch.filter(isObj);
+  const idsRec=new Map();rh.forEach(x=>{const i=idOf(x);if(i)idsRec.set(i,x)});
+  const recFp=new Set(),recLoose=new Set();rh.forEach(x=>{fps(x).forEach(k=>recFp.add(k));loose(x).forEach(k=>recLoose.add(k))});
+  const ixRec=mkIndex(fps);rh.forEach(x=>ixRec.add(x));
+  const idup=dupCount(objs,fps);
+  if(idup)block.push(tag+'सध्याच्या History मध्येच '+idup+' Duplicate-सारख्या नोंदी आहेत; खरे Duplicate की दोन खरे sessions हे सिद्ध करता येत नाही.');
+  let noTs=0,tsMis=0,conflict=0,noChap=0,badChap=0,noId=0,extra=0,unkChap=0,unkTopic=0,badBook=0;const seen=new Set();
+  objs.forEach(x=>{
+    if(idOf(x)==='')noId++;
+    const n=Number(x.ts),p=Date.parse(x.at||x.completedAt);
+    if(Number.isFinite(n)&&n>0&&Number.isFinite(p)&&Math.round(n)!==p)tsMis++;
+    if((x.at||x.completedAt)&&!Number.isFinite(p))tsMis++;
+    if(ixRec.has(x)){const i=idOf(x);if(i&&idsRec.has(i)&&!fps(x).some(k=>recFp.has(k)))conflict++;return}
+    extra++;
+    if(!hasTs(x))noTs++;
+    const lk=loose(x);if(lk.some(k=>recLoose.has(k))||lk.some(k=>seen.has(k)))conflict++;lk.forEach(k=>seen.add(k));
+    if(isA){const c=x.chapterId==null?'':String(x.chapterId);if(c==='')noChap++;else if(c==='__proto__'||c==='constructor'||c==='prototype')badChap++;else{const ts=known.get(c);if(!ts)unkChap++;else{const t=x.topicId==null?'':String(x.topicId);if(t===''||!ts.has(t))unkTopic++}}}
+    else{if(typeof x.chapter!=='string'||!x.chapter.trim()||typeof x.mode!=='string'||!x.mode.trim())badBook++}
+  });
+  if(noTs)block.push(tag+noTs+' नवीन नोंद(ी) मध्ये वैध timestamp नाही; Duplicate ओळखता येत नाही.');
+  if(tsMis)block.push(tag+tsMis+' नोंद(ी) मध्ये timestamp (ts/at) परस्परविरोधी किंवा अवाचनीय आहे.');
+  if(conflict)block.push(tag+conflict+' नोंद(ी) Recovery च्या नोंदीशी (किंवा परस्पर) एकाच वेळ/chapter/mode ची पण वेगळ्या गुणांची किंवा ID-विरोधी आहे; तीच session आहे की वेगळी हे सिद्ध करता येत नाही.');
+  if(noChap)block.push(tag+noChap+' नवीन नोंद(ी) मध्ये chapterId नाही; byChapter बेरीज सुसंगत ठेवता येणार नाही.');
+  if(badChap)block.push(tag+badChap+' नोंद(ी) मध्ये धोकादायक chapterId आहे.');
+  if(unkChap)block.push(tag+unkChap+' नवीन नोंद(ी) चा chapterId (Recovery/सध्याच्या chapters यादीत) ओळखता येत नाही.');
+  if(unkTopic)block.push(tag+unkTopic+' नवीन नोंद(ी) मध्ये topicId नाही किंवा त्या chapter मध्ये ओळखता येत नाही.');
+  if(badBook)block.push(tag+badBook+' नवीन नोंद(ी) मध्ये chapter किंवा mode (मजकूर) नाही; ओळख अनिश्चित.');
+  if(rh.length+extra>100)block.push(tag+'Merge नंतर History ची संख्या '+(rh.length+extra)+' होईल (मर्यादा 100); काही नोंदी शांतपणे गळतील.');
+  if(noId>0&&!block.length)info.push(tag+noId+' नोंद(ी) मध्ये ID नाही; Duplicate ओळख Fingerprint (timestamp+chapter/mode+गुण) वर आधारित आहे (timestamp वैध आहे).');
+  return{block,info};
+}
+function guardMerge(curA,curB,rA,rB){
+  const blocked=[],info=[];
+  [[curA,KA],[curB,KB]].forEach(([c,k])=>{if(!c)return;const E=validateRecord(k,c);E.slice(0,6).forEach(z=>blocked.push('<b>'+k+'</b> सध्याचा डेटा नियमबाह्य ['+CATS[z.c]+']: '+esc(z.m)));if(E.length>6)blocked.push('<b>'+k+'</b>: आणखी '+(E.length-6)+' दोष.')});
+  const known=new Map();[rA&&rA.chapters,curA&&curA.chapters].forEach(l=>(Array.isArray(l)?l:[]).forEach(c=>{if(!isObj(c)||typeof c.id!=='string')return;const s=known.get(c.id)||new Set();(Array.isArray(c.topics)?c.topics:[]).forEach(t=>{if(isObj(t)&&typeof t.id==='string')s.add(t.id)});known.set(c.id,s)}));
+  const run=(name,cur,rec,fps,loose,isA)=>{const g=guardKey(name,cur,rec,fps);if(g)blocked.push(g);const a=ambiguity(name,cur,rec,fps,loose,isA,known);blocked.push(...a.block);info.push(...a.info)};
+  if(curA)run('mmg_v2_data',curA.progress||{},rA.progress||{},fpsA,looseA,true);
+  if(curB)run('mmg_book_library_progress_v1',curB,rB,fpsB,looseB,false);
+  return{blocked,info};
+}
+function safePlan(m,a,b){try{return planRestore(m,a,b)}catch(e){return{blocked:['अनपेक्षित त्रुटी (सुरक्षिततेसाठी Merge थांबवला): '+esc(e.message)]}}}
+function planRestore(mode,curA,curB){
+  if(!recovery)throw new Error('Recovery वैध नाही');
+  const rA=clone(recovery.A),rB=clone(recovery.B);
+  if(mode==='replace')return{outA:rA,outB:rB,extras:{dA:0,dC:0,bA:0,bC:0,nA:0,nB:0}};
+  const gm=guardMerge(curA,curB,recovery.A,recovery.B);
+  if(gm.blocked.length)return{blocked:gm.blocked};
+  const ex={dA:0,dC:0,bA:0,bC:0,nA:0,nB:0};
+  const outA=rA,outB=rB;
+  // --- mmg_v2_data
+  if(curA&&Array.isArray(curA.chapters)){
+    curA.chapters.forEach(cc=>{
+      const rc=outA.chapters.find(c=>c.id===cc.id);
+      if(!rc){outA.chapters.push(clone(cc));return}
+      (cc.topics||[]).forEach(ct=>{
+        const rt=(rc.topics=rc.topics||[]).find(t=>t.id===ct.id);
+        if(!rt){rc.topics.push(clone(ct));return}
+        ['lessons','questions'].forEach(f=>{rt[f]=rt[f]||[];(ct[f]||[]).forEach(x=>{if(!rt[f].some(y=>y.id===x.id))rt[f].push(clone(x))})});
+      });
+    });
+    const ixA=mkIndex(fpsA);(rA.progress.history||[]).forEach(x=>ixA.add(x));
+    const extra=((curA.progress&&curA.progress.history)||[]).filter(x=>x&&typeof x==='object');
+    extra.forEach(x=>{if(ixA.has(x))return;ixA.add(x);
+      const a=safe(x.attempted),c=Math.min(safe(x.correct),a);
+      ex.dA+=a;ex.dC+=c;ex.nA++;
+      if(x.chapterId){const k=String(x.chapterId);if(k==='__proto__'||k==='constructor'||k==='prototype')throw new Error('अवैध chapterId');const bc=outA.progress.byChapter=outA.progress.byChapter||{};const t=Object.prototype.hasOwnProperty.call(bc,k)?bc[k]:{attempted:0,correct:0};t.attempted=safe(t.attempted)+a;t.correct=safe(t.correct)+c;bc[k]=t}
+      outA.progress.history=(outA.progress.history||[]).concat([clone(x)]);
+    });
+    if(curA.progress&&Array.isArray(curA.progress.cloudSyncedIds)){const cs=new Set([...(Array.isArray(outA.progress.cloudSyncedIds)?outA.progress.cloudSyncedIds:[]),...curA.progress.cloudSyncedIds]);outA.progress.cloudSyncedIds=[...cs]}
+    outA.progress.attempted=safe(outA.progress.attempted)+ex.dA;
+    outA.progress.correct=safe(outA.progress.correct)+ex.dC;
+    outA.progress.history=(outA.progress.history||[]).sort(byDesc(x=>x.completedAt)).slice(0,100);
+  }
+  // --- mmg_book_library_progress_v1
+  if(curB&&Array.isArray(curB.history)){
+    const ixB=mkIndex(fpsB);rB.history.forEach(x=>ixB.add(x));
+    curB.history.forEach(x=>{if(!x||typeof x!=='object')return;if(ixB.has(x))return;ixB.add(x);
+      const a=safe(x.attempted),c=Math.min(safe(x.correct),a);ex.bA+=a;ex.bC+=c;ex.nB++;outB.history.push(clone(x))});
+    outB.attempted=safe(outB.attempted)+ex.bA;outB.correct=safe(outB.correct)+ex.bC;
+    outB.history.sort((x,y)=>tsKey(y)-tsKey(x));outB.history=outB.history.slice(0,100);
+    const sy=new Set([...(Array.isArray(rB.synced)?rB.synced:[]),...(Array.isArray(curB.synced)?curB.synced:[])]);
+    if(sy.size)outB.synced=[...sy];
+  }
+  const post=validateRecord(KA,outA).concat(validateRecord(KB,outB));
+  if(post.length)return{blocked:['Merge चा निकाल नियमबाह्य ठरला (सुरक्षिततेसाठी थांबवले): '+esc(post.slice(0,3).map(z=>CATS[z.c]+': '+z.m).join('; '))]};
+  return{outA,outB,extras:ex,info:gm.info};
+}
+function mode(){return document.querySelector('input[name=mode]:checked').value}
+function previewHtml(p){
+  const s=statsFrom(p.outA,p.outB),e=p.extras;
+  let h='<div class="muted">Restore नंतर अपेक्षित (Preview):</div><div class="big"><div><b>'+s.att+'</b><small>Attempted</small></div><div><b>'+s.cor+'</b><small>Correct</small></div><div><b>'+s.acc+'%</b><small>Accuracy</small></div></div>';
+  h+='<div class="muted">Data '+s.dA+'/'+s.dC+' · Book '+s.bA+'/'+s.bC+' · History '+s.dH+' + '+s.bH+'</div>';
+  if(e.nA+e.nB>0)h+='<p class="wn">सध्याचे '+(e.nA+e.nB)+' नवीन session(s) (Attempted +'+(e.dA+e.bA)+', Correct +'+(e.dC+e.bC)+') जोडले जातील, म्हणून एकूण 172/93 पेक्षा जास्त दिसेल.</p>';
+  else h+='<p class="ok">नवीन sessions नाहीत → निकाल अगदी 172 / 93 / 54%.</p>';
+  if(p.info&&p.info.length)h+='<div class="muted">ℹ '+p.info.join('<br>ℹ ')+'</div>';
+  return h;
+}
+function renderPreview(){
+  mergeBlocked=false;
+  if(!recovery){$('preview').innerHTML='';updateButtons();return}
+  const {A,B}=readCurrent();let h='';
+  const blockBox=list=>'<div class="warnbox"><b>⛔ Smart Merge थांबवला आहे.</b><ul>'+list.map(x=>'<li>'+x+'</li>').join('')+'</ul>सुरक्षितपणे Merge करता येत नाही. पर्याय: <b>Exact Replace</b> निवडा (सध्याचा डेटा Rollback Snapshot मध्ये जतन राहील), किंवा हा इशारा दाखवून मदत घ्या. काहीही बदललेले नाही.</div>';
+  if(mode()==='merge'){
+    if(!A.ok||!B.ok){mergeBlocked=true;h=blockBox(['सध्याचा डेटा खराब/न वाचता येणारा आहे ('+(A.ok?'':KA+' ')+(B.ok?'':KB)+').'])}
+    else{const p=safePlan('merge',A.val,B.val);if(p.blocked){mergeBlocked=true;h=blockBox(p.blocked)}else h=previewHtml(p)}
+  }else{
+    h=previewHtml(safePlan('replace',null,null));
+    if(!isEmptyStore())h+='<p class="wn">⚠ Exact Replace सध्याचा डेटा बदलतो. सध्याचे नवीन sessions वापरात राहणार नाहीत (फक्त Rollback Snapshot मध्ये राहतील).</p>';
+  }
+  $('preview').innerHTML=h;updateButtons();
+}
+
+/* ---------- snapshots / backup ---------- */
+function snapInteg(s){return sha256(JSON.stringify([s.version,s.createdAt,s.origin,s.raw[KA],s.raw[KB]]))}
+function makeSnapshot(){const a=lsGet(KA),b=lsGet(KB);if(a===undefined||b===undefined)throw new Error('Local Storage वाचता आला नाही');const s={app:'The Mental Math Gym',format:'MMG-RESTORE-TOOL-SNAPSHOT',version:2,createdAt:new Date().toISOString(),origin:location.origin,raw:{[KA]:a,[KB]:b}};s.integrity=snapInteg(s);return s}
+function snapOrAlert(){try{return makeSnapshot()}catch(e){alert('Local Storage वाचता आला नाही: '+e.message+'. काहीही बदललेले नाही.');log('थांबवले: Storage वाचन अयशस्वी');return null}}
+const MAXB=5000000;
+async function readFileSafe(f){if(f.size>MAXB)throw new Error('फाइल खूप मोठी ('+f.size+' bytes; कमाल '+MAXB+')');return await f.text()}
+const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+/* Snapshot/Backup ची पूर्ण तपासणी: format, version, metadata, integrity checksum, दोन्ही keys, raw JSON, (deep) record रचना */
+function validateSnapshot(s,o){
+  o=o||{};const E=[],e=m=>E.push(m);
+  if(!isObj(s))return{ok:false,errs:['फाइल JSON object नाही']};
+  if(s.format!=='MMG-RESTORE-TOOL-SNAPSHOT')e('format चुकीचा ('+String(s.format)+'); ही या Tool ची Snapshot/Backup नाही');
+  if(s.version!==2)e('version=2 अपेक्षित (आहे: '+String(s.version)+'); जुनी/अज्ञात आवृत्ती स्वीकारली जात नाही');
+  if(s.app!=='The Mental Math Gym')e('app चुकीचे');
+  if(typeof s.createdAt!=='string'||!Number.isFinite(Date.parse(s.createdAt)))e('createdAt अवैध/नाही');
+  if(typeof s.origin!=='string'||!s.origin)e('origin नाही');else if(o.requireOrigin&&s.origin!==location.origin)e('origin ('+s.origin+') सध्याच्या origin ('+location.origin+') शी जुळत नाही');
+  if(!isObj(s.raw)){e('raw विभाग नाही');return{ok:false,errs:E}}
+  const hA=has(s.raw,KA),hB=has(s.raw,KB);
+  if(!hA)e('key '+KA+' नाही (अपूर्ण फाइल)');if(!hB)e('key '+KB+' नाही (अपूर्ण फाइल)');
+  let typesOK=true;
+  [[KA,hA],[KB,hB]].forEach(([k,h])=>{if(!h)return;const v=s.raw[k];if(v!==null&&typeof v!=='string'){e(k+': raw मूल्य string/null नाही');typesOK=false;return}
+    if(v!==null&&o.deep!==false){let j;try{j=JSON.parse(v)}catch(x){e(k+': raw JSON खराब ('+x.message+')');return}validateRecord(k,j).forEach(z=>e(k+' ['+CATS[z.c]+'] '+z.m))}});
+  if(typeof s.integrity!=='string'||!/^[0-9a-f]{64}$/.test(s.integrity))e('integrity checksum नाही/अवैध');
+  else if(hA&&hB&&typesOK&&snapInteg(s)!==s.integrity)e('integrity checksum जुळत नाही (फाइल बदललेली/अपूर्ण/खराब)');
+  return{ok:!E.length,errs:E};
+}
+/* Rollback Snapshots: प्रत्येक नोंद वैध की अवैध ते दाखवतो; अवैध शांतपणे लपवत नाही; खराब key वेगळी जतन करतो */
+let rollMemo={raw:null,val:[]},rollCorrupt=false;
+function getRolls(){
+  const raw=lsGet(ROLL);if(raw===null||raw===undefined){rollCorrupt=false;return[]}
+  if(rollMemo.raw===raw)return rollMemo.val;
+  let a=null;try{a=JSON.parse(raw)}catch(e){}
+  if(!Array.isArray(a)){rollCorrupt=true;try{if(lsGet(ROLLBAD)===null)localStorage.setItem(ROLLBAD,raw)}catch(e){}rollMemo={raw,val:[]};return[]}
+  rollCorrupt=false;
+  const val=a.map(s=>{const v=validateSnapshot(s,{deep:true,requireOrigin:true});return{s,ok:v.ok,errs:v.errs}});
+  rollMemo={raw,val};return val;
+}
+/* सर्वात जुना (मूळ) Snapshot कायम + शेवटचे ५; लिहिल्यावर परत वाचून तपासतो. सर्वात नवीन Snapshot कधीही आपोआप वगळला जात नाही */
+function saveRolls(a){if(rollCorrupt&&lsGet(ROLLBAD)===null)throw new Error('खराब Rollback key जतन करता आली नाही');let r=a;if(r.length>6)r=[r[0]].concat(r.slice(-5));const s=JSON.stringify(r);localStorage.setItem(ROLL,s);if(lsGet(ROLL)!==s)throw new Error('Snapshot परत वाचताना जुळला नाही');rollMemo={raw:null,val:[]}}
+function stamp(){return new Date().toISOString().replace(/[-:T]/g,'').slice(0,14)}
+function downloadText(name,text){const blob=new Blob([text],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}
+function backupOK(){return !!backupRaw&&lsGet(KA)===backupRaw.A&&lsGet(KB)===backupRaw.B}
+function isEmptyStore(){return lsGet(KA)===null&&lsGet(KB)===null}
+function journalPresent(){const j=lsGet(JKEY);return j!==null&&j!==undefined}
+function gateState(){
+  const why=[];
+  if(!writable)why.push('Origin चुकीचा/परवानगी नसलेला');
+  if(!LS_OK)why.push('Local Storage उपलब्ध नाही/लिहिता येत नाही');
+  if(writable&&!(navigator.locks&&navigator.locks.request))why.push('Web Locks उपलब्ध नाही (एकाच वेळी दोन tabs मध्ये Restore टाळण्यासाठी आवश्यक)');
+  if(!recovery)why.push('Recovery Validation पास नाही (Restore/Merge/Replace तिन्ही बंद)');
+  if(journalPresent())why.push('मागील Restore/Rollback अपूर्ण राहिला होता (वरील लाल इशारा); आधी स्थिती तपासा/Rollback करा');
+  if(isEmptyStore()){if(!$('chkEmpty').checked)why.push('रिकाम्या Storage ची पुष्टी बाकी (३ मधील इशारा)')}
+  else{
+    if(!backupOK())why.push(backupRaw?'Backup नंतर डेटा बदलला; पुन्हा Backup घेऊन पडताळा':'Backup अजून पडताळलेली नाही (३ब)');
+    else if(!$('chkSafe').checked)why.push('Backup सुरक्षित ठेवल्याची पुष्टी बाकी');
+    if(curIssues().length&&!$('chkBad').checked)why.push('सध्याच्या डेटातील दोषांची पुष्टी बाकी (३ मधील इशारा)');
+  }
+  if(!$('chkTabs').checked)why.push('इतर tabs बंद केल्याची पुष्टी बाकी');
+  if(mode()==='merge'&&mergeBlocked)why.push('Smart Merge थांबवला आहे (वरील इशारा)');
+  return why;
+}
+function renderJournal(){
+  const j=lsGet(JKEY),box=$('journalBox');
+  if(j===null||j===undefined){box.classList.add('hidden');box.innerHTML='';return}
+  let d='';try{d=JSON.parse(j)}catch(e){d={}}
+  box.classList.remove('hidden');
+  box.innerHTML='<b>⛔ मागील '+esc(d.op||'operation')+' पूर्ण/पडताळलेला नाही</b> (सुरू: '+esc(d.startedAt||'?')+'). कदाचित browser/tab मध्येच बंद झाला. सध्याचा डेटा अर्धवट असू शकतो.<ol><li>Gym साइटचे सर्व tabs बंद ठेवा.</li><li>खाली ६ मधून योग्य Snapshot (वेळ: '+esc(d.snapshotCreatedAt||'?')+') निवडून Rollback करा, किंवा Backup फाइल निवडा.</li><li>किंवा "आत्ता तपासा" दाबून डेटा ठीक असल्याची खात्री करून खालील बटण दाबा.</li></ol><button class="btn sec" id="btnJournalClear">मी स्थिती तपासली; हा इशारा काढा</button>';
+  const b=$('btnJournalClear');if(b)b.onclick=()=>{if(!confirm('खात्री आहे? सध्याचा डेटा तपासला असल्याची तुमची जबाबदारी आहे.'))return;try{localStorage.removeItem(JKEY)}catch(e){}log('Journal वापरकर्त्याने साफ केला');renderJournal();updateButtons()};
+}
+function showEmergency(reason,snap){
+  emergencySnap=snap||emergencySnap;const box=$('emergency');
+  box.innerHTML='<b>🚨 तातडीचा इशारा: डेटा पडताळता आला नाही</b><div>'+esc(reason)+'</div><ol><li>Gym साइट उघडू नका; Gym चे सर्व tabs बंद करा. हा tab बंद करू नका.</li>'+(emergencySnap?'<li>खालील बटणाने Restore आधीचा Snapshot (मूळ डेटा) <b>आत्ता डाउनलोड करा</b> आणि सुरक्षित ठेवा.</li>':'')+'<li>६ मधून Rollback करा: यादीतील वैध Snapshot किंवा तुमची आधी पडताळलेली Backup फाइल निवडा. नंतर "आत्ता तपासा" दाबा.</li><li>तेही जमले नाही तर Chrome चा site data/Storage <b>साफ करू नका</b>; Activity Log Copy करा आणि मदतीसाठी पाठवा. Backup फाइल कधीही delete करू नका.</li></ol>'+(emergencySnap?'<button class="btn warn" id="btnEmgDl">⬇ Restore आधीचा Snapshot डाउनलोड करा</button>':'');
+  box.classList.remove('hidden');const b=$('btnEmgDl');if(b)b.onclick=()=>downloadText('MMG-EMERGENCY-snapshot-'+stamp()+'.json',JSON.stringify(emergencySnap,null,2));
+  log('🚨 EMERGENCY: '+reason);try{box.focus()}catch(e){}
+}
+function updateButtons(){
+  const empty=isEmptyStore(),why=gateState();
+  $('btnBackup').disabled=!writable;$('btnCopy').disabled=!writable;
+  $('btnBkPaste').disabled=!writable;$('bkFile').disabled=!writable;$('rollFile').disabled=!(writable&&LS_OK);
+  $('emptyBox').classList.toggle('hidden',!(empty&&recovery));
+  $('btnRestore').disabled=busy||why.length>0;
+  $('whyBox').textContent=why.length?'Restore बंद आहे: '+why.join(' · '):'';
+  const r=getRolls(),sel=$('rollSel'),prev=sel.value;
+  sel.innerHTML=r.length?r.map((x,i)=>'<option value="'+i+'">'+(x.ok?'✓ ':'✗ अवैध · ')+(isObj(x.s)&&x.s.createdAt?esc(new Date(x.s.createdAt).toLocaleString()):'?')+' · '+esc((isObj(x.s)&&x.s.label)||'snapshot')+'</option>').join(''):'<option value="-1">Snapshot नाही</option>';
+  if(r.length)sel.value=(prev&&Number(prev)>=0&&Number(prev)<r.length)?prev:String(r.length-1);
+  const cur=r[Number(sel.value)];
+  $('btnRollback').disabled=busy||!(writable&&LS_OK&&cur&&cur.ok);
+  $('btnClearRolls').disabled=busy||!(LS_OK&&(r.length||rollCorrupt));
+  if(rollCorrupt)$('rollStatus').textContent='⚠ Rollback साठवण खराब आहे; तिची प्रत '+ROLLBAD+' मध्ये जतन केली आहे. नवीन Snapshots स्वतंत्रपणे बनतील.';
+  else if(cur&&!cur.ok)$('rollStatus').textContent='✗ निवडलेला Snapshot अवैध असल्याने Rollback बंद: '+cur.errs.slice(0,3).join(' · ');
+  $('bkStatus').textContent=(bkNote?bkNote+' ':'')+(empty?'सध्या डेटा रिकामा आहे — Backup आवश्यक नाही (Rollback रिकाम्या स्थितीवर परत नेईल).':backupOK()?'✓ पडताळलेली Backup सध्याच्या डेटाशी जुळते.':(backupRaw?'⚠ पडताळणीनंतर डेटा बदलला; पुन्हा Backup घ्या.':'Backup अजून पडताळलेली नाही.'));
+}
+function verifyBackupText(text,label){
+  let s;
+  try{s=JSON.parse(text)}catch(e){backupRaw=null;bkNote='✗ Backup वाचता आली नाही: '+e.message;updateButtons();return false}
+  const vs=validateSnapshot(s,{deep:false,requireOrigin:true});
+  if(!vs.ok){backupRaw=null;bkNote='✗ Backup अवैध: '+vs.errs.slice(0,3).join(' · ')+(vs.errs.length>3?' (+'+(vs.errs.length-3)+' अजून)':'')+'. (Recovery फाइल येथे चालत नाही.)';log('Backup नाकारली: '+vs.errs.join('; '));updateButtons();return false}
+  const cur={A:lsGet(KA),B:lsGet(KB)};
+  if(cur.A===undefined||cur.B===undefined){backupRaw=null;bkNote='✗ Local Storage वाचता आला नाही.';updateButtons();return false}
+  if(s.raw[KA]!==cur.A||s.raw[KB]!==cur.B){backupRaw=null;bkNote='✗ '+label+' सध्याच्या डेटाशी जुळत नाही (जुनी किंवा अपूर्ण Backup). नवीन Backup डाउनलोड करा.';updateButtons();return false}
+  backupRaw=cur;bkNote='✓ '+label+' पडताळली.';log('Backup पडताळली: '+label);updateButtons();return true;
+}
+$('btnBackup').onclick=()=>{const s=snapOrAlert();if(!s)return;s.label='manual backup';downloadText('MMG-before-restore-'+stamp()+'.json',JSON.stringify(s,null,2));backupRaw=null;bkNote='Backup डाउनलोड सुरू झाली. आता फाइल Downloads मध्ये आहे का पाहा आणि ३ब मध्ये ती निवडून पडताळा.';log('Backup डाउनलोडसाठी दिला (अजून पडताळलेला नाही).');updateButtons()};
+$('btnCopy').onclick=async()=>{const sn=snapOrAlert();if(!sn)return;const t=JSON.stringify(sn);try{await navigator.clipboard.writeText(t);backupRaw=null;bkNote='Backup copy झाला ('+t.length+' अक्षरे). Notes मध्ये paste करून ठेवा, मग तोच मजकूर खाली paste करून पडताळा.';updateButtons()}catch(e){alert('Copy जमले नाही: '+e.message+'. डाउनलोड बटण वापरा.')}};
+$('bkFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{verifyBackupText(await readFileSafe(f),'फाइल '+f.name)}catch(err){backupRaw=null;bkNote='✗ '+err.message;updateButtons()}e.target.value=''};
+$('btnBkPaste').onclick=()=>{const t=$('bkPaste').value.trim();if(!t)return alert('आधी Backup मजकूर paste करा');if(t.length>MAXB){backupRaw=null;bkNote='✗ मजकूर खूप मोठा';updateButtons();return}verifyBackupText(t,'Paste केलेली Backup')};
+
+/* ---------- restore ---------- */
+function writeRaw(snapRaw){[KA,KB].forEach(k=>{if(snapRaw[k]==null)localStorage.removeItem(k);else localStorage.setItem(k,snapRaw[k])})}
+function rawMatches(snapRaw){return [KA,KB].every(k=>lsGet(k)===(snapRaw[k]==null?null:snapRaw[k]))}
+/* अपयशानंतर आधीची स्थिती परत आणतो आणि परत वाचून तपासतो (३ प्रयत्न) */
+function autoRollback(snapRaw){
+  for(let i=0;i<3;i++){try{writeRaw(snapRaw)}catch(e){log('Auto-rollback लेखन त्रुटी (प्रयत्न '+(i+1)+'): '+e.message)}if(rawMatches(snapRaw))return true}
+  return false;
+}
+function journalSet(o){const s=JSON.stringify(o);localStorage.setItem(JKEY,s);if(lsGet(JKEY)!==s)throw new Error('Journal परत वाचताना जुळला नाही')}
+function journalClear(){try{localStorage.removeItem(JKEY)}catch(e){}return lsGet(JKEY)===null}
+async function withLock(fn){
+  if(!(navigator.locks&&navigator.locks.request))return{denied:'nolocks'};
+  let ran=false,res;
+  await navigator.locks.request('mmg-restore-tool-lock',{ifAvailable:true},async lock=>{if(!lock)return;ran=true;res=await fn()});
+  return ran?{res}:{denied:'busy'};
+}
+function lockMsg(r){return r.denied==='busy'?'दुसऱ्या tab/window मध्ये Restore/Rollback चालू आहे; सुरक्षिततेसाठी थांबवले. काहीही बदललेले नाही.':'Web Locks उपलब्ध नाही; सुरक्षितता हमी देता येत नाही म्हणून थांबवले. काहीही बदललेले नाही.'}
+function startBusy(){busy=true;$('btnRestore').disabled=true;$('btnRollback').disabled=true;$('btnClearRolls').disabled=true}
+function endBusy(){busy=false;renderCurrent();renderPreview();updateButtons()}
+$('btnRestore').onclick=async()=>{
+  if(busy)return;startBusy();
+  try{const r=await withLock(doRestore);if(r.denied){alert(lockMsg(r));log('Restore थांबवला: '+r.denied)}}
+  catch(e){log('Restore अनपेक्षित त्रुटी: '+e.message);alert('अनपेक्षित त्रुटी; Restore थांबवला: '+e.message+'\n\nडेटा तपासण्यासाठी "आत्ता तपासा" दाबा.')}
+  finally{endBusy()}
+};
+function lateCheck(label,expect,ext1){
+  setTimeout(()=>{try{
+    if(!rawMatches(expect)||extChange!==ext1){showEmergency(label+' नंतर ~१ सेकंदाने डेटा बदललेला आढळला (कदाचित दुसऱ्या tab/ब्राउझरने). आपोआप Rollback केला नाही, कारण तो नवीन बदल पुसू शकतो.',emergencySnap);renderCurrent()}
+    else log('उशिरा पुनर्तपासणी ✓ ('+label+'): डेटा अजूनही अपेक्षित स्थितीत.');
+  }catch(e){log('उशिरा पुनर्तपासणी त्रुटी: '+e.message)}},900);
+}
+async function doRestore(){
+  const ext0=extChange;
+  if(recovery){
+    let vv=validateRecovery(recovery.meta),shaOk=true;
+    if(recovery.embedded)shaOk=sha256(recovery.text)===RECOVERY_SHA;
+    if(!vv.ok||!shaOk){recovery=null;log('Restore थांबवला: Recovery पुन्हा-तपासणी अयशस्वी');renderPreview();alert('Recovery फाइलची पुन्हा-तपासणी अयशस्वी. Restore थांबवला.');return}
+  }
+  let why=gateState();
+  if(why.length){updateButtons();alert('Restore अजून करता येत नाही:\n• '+why.join('\n• '));return}
+  const rawA0=lsGet(KA),rawB0=lsGet(KB);
+  if(rawA0===undefined||rawB0===undefined){alert('Local Storage वाचता आला नाही; Restore थांबवला.');return}
+  const A=parseRaw(rawA0),B=parseRaw(rawB0),m=mode();
+  const p=safePlan(m,m==='merge'&&A.ok?A.val:null,m==='merge'&&B.ok?B.val:null);
+  if(m==='merge'&&(!A.ok||!B.ok||p.blocked)){renderPreview();alert('Smart Merge थांबवला आहे. काहीही बदललेले नाही.');return}
+  if(p.blocked){renderPreview();alert('Restore थांबवला आहे. काहीही बदललेले नाही.');return}
+  const s=statsFrom(p.outA,p.outB);
+  const msg=m==='merge'
+    ?'SMART MERGE करायचे?\nजुना Recovery Progress + सध्याचे फक्त नवीन sessions.\nनंतर: Attempted '+s.att+', Correct '+s.cor+', Accuracy '+s.acc+'%\n\nआधी Rollback Snapshot जतन केला जाईल.'
+    :'EXACT REPLACE करायचे?\n⚠ दोन्ही records Recovery फाइलप्रमाणे हुबेहूब बदलले जातील. सध्याचे नवीन sessions Gym मध्ये राहणार नाहीत (फक्त Rollback Snapshot मध्ये).\nनंतर: Attempted '+s.att+', Correct '+s.cor+', Accuracy '+s.acc+'%\n\nआधी Rollback Snapshot जतन केला जाईल.';
+  if(!confirm(msg)){log('Restore वापरकर्त्याने रद्द केला ('+m+')');return}
+  /* confirm दरम्यान दुसऱ्या tab ने बदल केला का? Chrome मध्ये cross-tab बदल थोड्या वेळाने कळतो (हमी नाही), म्हणून थोडे थांबून पुन्हा तपासतो. */
+  await sleep(150);
+  why=gateState();
+  if(extChange!==ext0||why.length||lsGet(KA)!==rawA0||lsGet(KB)!==rawB0){log('Restore रद्द: confirm दरम्यान स्थिती बदलली');renderCurrent();renderPreview();updateButtons();alert('Confirm दरम्यान डेटा/स्थिती बदलली (कदाचित दुसऱ्या tab ने). काहीही लिहिले नाही. पुन्हा Backup पडताळून प्रयत्न करा.');return}
+  const snap=snapOrAlert();if(!snap)return;snap.label='auto, restore आधी ('+m+')';emergencySnap=snap;
+  const rolls=getRolls().map(x=>x.s);rolls.push(snap);
+  try{saveRolls(rolls)}catch(e){log('Restore थांबवला: Snapshot जतन अयशस्वी: '+e.message);alert('Rollback Snapshot जतन झाला नाही (Storage भरलेला असू शकतो). Restore थांबवला; काहीही बदललेले नाही: '+e.message);return}
+  try{journalSet({op:'restore ('+m+')',startedAt:new Date().toISOString(),snapshotCreatedAt:snap.createdAt})}catch(e){log('Restore थांबवला: Journal लिहिता आला नाही: '+e.message);alert('Journal लिहिता आला नाही; सुरक्षिततेसाठी Restore थांबवला; काहीही बदललेले नाही.');return}
+  log('Restore सुरू ('+m+'); Rollback Snapshot जतन केला.');
+  const strA=JSON.stringify(p.outA),strB=JSON.stringify(p.outB),expect={[KA]:strA,[KB]:strB};
+  let rep=null;
+  try{
+    localStorage.setItem(KA,strA);localStorage.setItem(KB,strB);
+    if(lsGet(KA)!==strA||lsGet(KB)!==strB)throw new Error('लिहिलेला डेटा परत वाचताना जुळला नाही');
+    rep=buildReport('restore',{expect,extras:p.extras});
+    if(!rep.ok)throw new Error('Restore नंतरची पडताळणी अयशस्वी ('+rep.rows.filter(r=>r.st!=='PASS'&&r.req).map(r=>r.n).join(', ')+')');
+  }catch(e){
+    const ok=autoRollback(snap.raw);
+    log('Restore अयशस्वी: '+e.message+' → आपोआप Rollback '+(ok?'यशस्वी (परत वाचून पडताळले)':'अयशस्वी!'));
+    if(ok){journalClear();alert('Restore अयशस्वी ('+e.message+'). जुना डेटा आपोआप परत ठेवला आणि पडताळला ✓. काहीही हरवले नाही.')}
+    else{showEmergency('Restore अयशस्वी ('+e.message+') आणि आपोआप Rollback पडताळता आला नाही!',snap);alert('⚠ Restore अयशस्वी आणि आपोआप Rollback पडताळणीत अयशस्वी! वरील तातडीचा इशारा वाचा. Gym साइट उघडू नका.')}
+    renderCurrent();showReport(buildReport('state',{}));return}
+  const ext1=extChange;journalClear();
+  log('Restore पूर्ण आणि पडताळले ('+m+'). Extras: '+JSON.stringify(p.extras));
+  renderCurrent();renderPreview();showReport(rep);updateButtons();lateCheck('Restore',expect,ext1);
+  alert('Restore पूर्ण आणि पडताळले ✓. खाली तपासणी निकाल पहा, मग Gym साइट नवीन tab मध्ये उघडा.');
+}
+
+/* ---------- verify / report ---------- */
+function deriveExtras(av,bv){
+  const ex={dA:0,dC:0,bA:0,bC:0,nA:0,nB:0};if(!recovery)return ex;
+  const iA=mkIndex(fpsA);recovery.A.progress.history.forEach(x=>iA.add(x));
+  ((av&&av.progress&&Array.isArray(av.progress.history))?av.progress.history:[]).forEach(x=>{if(!isObj(x)||iA.has(x))return;iA.add(x);const a=safe(x.attempted);ex.dA+=a;ex.dC+=Math.min(safe(x.correct),a);ex.nA++});
+  const iB=mkIndex(fpsB);recovery.B.history.forEach(x=>iB.add(x));
+  ((bv&&Array.isArray(bv.history))?bv.history:[]).forEach(x=>{if(!isObj(x)||iB.has(x))return;iB.add(x);const a=safe(x.attempted);ex.bA+=a;ex.bC+=Math.min(safe(x.correct),a);ex.nB++});
+  return ex;
+}
+function verifyCore(exO){
+  const {A,B}=readCurrent();
+  if(!A.ok||!B.ok||A.empty||B.empty)return{ok:false,rows:[],s:null,msg:'एक किंवा दोन्ही records नाहीत/खराब आहेत.'};
+  const s=statsFrom(A.val,B.val),e=exO||deriveExtras(A.val,B.val),xa=e.dA+e.bA,xc=e.dC+e.bC;
+  const rows=[];const add=(n,got,exp,note)=>rows.push([n,got,exp,String(got)===String(exp),note||'']);
+  add('Attempted',s.att,EXPECT.att+xa,xa?'172 + '+xa+' नवीन':'');
+  add('Correct',s.cor,EXPECT.cor+xc,xc?'93 + '+xc+' नवीन':'');
+  add('Accuracy %',s.acc,Math.round((EXPECT.cor+xc)/(EXPECT.att+xa)*100));
+  add('Data Attempted/Correct',s.dA+'/'+s.dC,(EXPECT.dAtt+e.dA)+'/'+(EXPECT.dCor+e.dC));
+  add('Book Attempted/Correct',s.bA+'/'+s.bC,(EXPECT.bAtt+e.bA)+'/'+(EXPECT.bCor+e.bC));
+  add('Data History नोंदी',s.dH,EXPECT.dHist+e.nA);
+  add('Book History नोंदी',s.bH,EXPECT.bHist+e.nB);
+  if(recovery){
+    const iA=mkIndex(fpsA),iB=mkIndex(fpsB);(A.val.progress.history||[]).forEach(x=>iA.add(x));(B.val.history||[]).forEach(x=>iB.add(x));
+    add('Recovery मधील हरवलेल्या History नोंदी',(recovery.A.progress.history||[]).filter(x=>!iA.has(x)).length+recovery.B.history.filter(x=>!iB.has(x)).length,0);
+  }
+  return{ok:rows.every(r=>r[3]),rows,s,msg:''};
+}
+/* PASS/FAIL/N/A अहवाल. 'req' तपासणी PASS नसेल (N/A सह) तर एकूण निकाल कधीही PASS नाही. */
+function buildReport(kind,o){
+  o=o||{};const rows=[];const R=(n,st,note,req)=>rows.push({n,st,note:note||'',req:req!==false});
+  try{
+    const exp=o.expect;
+    if(exp)[KA,KB].forEach(k=>R(k+': परत वाचलेला raw = लिहिलेला/अपेक्षित (byte-for-byte)',lsGet(k)===(exp[k]==null?null:exp[k])?'PASS':'FAIL'));
+    else R('Raw तुलना (अपेक्षित मूल्याशी)','NA','अपेक्षित raw दिलेले नाही'+(kind==='state'?' ("आत्ता तपासा" मध्ये लागू नाही)':''),kind!=='state');
+    if(o.snapOk)R('Snapshot integrity checksum + सखोल तपासणी','PASS');
+    const cur={};
+    [KA,KB].forEach(k=>{
+      const P=parseRaw(lsGet(k));cur[k]=P;
+      if(P.empty){const exNull=exp&&exp[k]==null;R(k+': record','NA'.replace('NA',exNull?'PASS':'FAIL'),exNull?'अनुपस्थित (अपेक्षित)':'record नाही');return}
+      if(!P.ok){R(k+': JSON parse','FAIL',P.err);return}
+      R(k+': JSON parse','PASS');
+      const E=validateRecord(k,P.val);
+      Object.keys(CATS).forEach(c=>{const f=E.filter(z=>z.c===c);R(k+': '+CATS[c]+CATL[c],f.length?'FAIL':'PASS',f.map(z=>z.m).join('; '))});
+    });
+    if(kind==='restore'||kind==='state'){
+      if(!recovery)R('Recovery-आधारित तपासणी (172/93, History हरवली नाही)','NA','Recovery लोड नाही',kind==='restore');
+      else if(!cur[KA].ok||!cur[KB].ok||cur[KA].empty||cur[KB].empty)R('Recovery-आधारित तपासणी','FAIL','records उपलब्ध नाहीत');
+      else{const vc=verifyCore(o.extras||null);vc.rows.forEach(r=>R(r[0],r[3]?'PASS':'FAIL','आहे '+r[1]+' / अपेक्षित '+r[2]+(r[4]?' ('+r[4]+')':'')))}
+    }else R('Recovery एकूण (172/93) तुलना','NA','Rollback मध्ये लागू नाही (Snapshot शी raw तुलना केली)',false);
+  }catch(e){R('अहवाल तयार करताना अनपेक्षित त्रुटी','FAIL',e.message)}
+  const ok=rows.length>0&&rows.every(r=>r.st!=='FAIL'&&(!r.req||r.st==='PASS'));
+  return{ok,rows,kind};
+}
+function showReport(r){
+  const s=statsFrom(parseRaw(lsGet(KA)).val,parseRaw(lsGet(KB)).val);
+  let h='<div class="big"><div><b>'+s.att+'</b><small>Attempted</small></div><div><b>'+s.cor+'</b><small>Correct</small></div><div><b>'+s.acc+'%</b><small>Accuracy</small></div></div>';
+  h+='<div class="verdict '+(r.ok?'pass':'fail')+'" role="status">'+(r.ok?'✓ निकाल: PASS':'✗ निकाल: FAIL')+'</div>';
+  h+='<table><tr><th>तपासणी</th><th>तपशील</th><th>निकाल</th></tr>';
+  r.rows.forEach(x=>h+='<tr><td>'+esc(x.n)+'</td><td>'+esc(x.note)+'</td><td class="'+(x.st==='PASS'?'pass':x.st==='FAIL'?'fail':'na')+'">'+(x.st==='NA'?'N/A':x.st)+'</td></tr>');
+  h+='</table>'+(r.ok?'':'<p class="bad">काही तपासण्या PASS नाहीत. Gym साइट वापरू नका; ६ मधून Rollback करा.</p>');
+  $('verify').innerHTML=h;log('Verification ('+r.kind+'): '+(r.ok?'PASS':'FAIL')+' · '+s.att+'/'+s.cor+' ('+s.acc+'%)');
+  return r.ok;
+}
+$('btnVerify').onclick=()=>showReport(buildReport('state',{}));
+$('btnLogCopy').onclick=async()=>{try{await navigator.clipboard.writeText(logLines.join('\n'));alert('Log copy झाला')}catch(e){alert('Copy जमले नाही: '+e.message)}};
+$('btnLogDl').onclick=()=>downloadText('MMG-restore-log-'+stamp()+'.txt',logLines.join('\n'));
+
+/* ---------- rollback ---------- */
+async function doRollback(snap,label){
+  const ext0=extChange;
+  if(!writable||!LS_OK){alert('Rollback करता येत नाही: Origin/Local Storage परवानगी नाही.');return}
+  const vs=validateSnapshot(snap,{deep:true,requireOrigin:true});
+  if(!vs.ok){$('rollStatus').innerHTML='<span class="bad">✗ Rollback नाकारला (फाइल/Snapshot अवैध). सध्याचा डेटा अजिबात बदलला नाही.</span><ul><li>'+vs.errs.slice(0,8).map(esc).join('</li><li>')+'</li></ul>';log('Rollback नाकारला ('+label+'): '+vs.errs.join('; '));alert('अयोग्य Snapshot/Backup फाइल; Rollback केला नाही. काहीही बदललेले नाही.\n• '+vs.errs.slice(0,4).join('\n• '));return}
+  if(!confirm('Rollback: '+label+' ?\nसध्याचा डेटा या Snapshot ने बदलला जाईल. (आधी सध्याची स्थिती नवीन Snapshot म्हणून जतन होईल.)'))return;
+  await sleep(150);
+  if(extChange!==ext0){alert('Confirm दरम्यान डेटा बदलला (दुसऱ्या tab ने). Rollback थांबवला; काहीही बदललेले नाही.');log('Rollback रद्द: बाह्य बदल');return}
+  const cur=snapOrAlert();if(!cur)return;cur.label='auto, rollback आधी';emergencySnap=cur;
+  const r=getRolls().map(x=>x.s);r.push(cur);
+  try{saveRolls(r)}catch(e){log('Rollback थांबवला: सध्याच्या स्थितीचा Snapshot जतन अयशस्वी: '+e.message);alert('सध्याच्या स्थितीचा Snapshot जतन झाला नाही ('+e.message+'). सुरक्षिततेसाठी Rollback थांबवला; काहीही बदललेले नाही.');return}
+  try{journalSet({op:'rollback',startedAt:new Date().toISOString(),snapshotCreatedAt:cur.createdAt})}catch(e){alert('Journal लिहिता आला नाही; Rollback थांबवला; काहीही बदललेले नाही.');return}
+  let rep=null;
+  try{
+    writeRaw(snap.raw);
+    if(!rawMatches(snap.raw))throw new Error('परत वाचताना जुळले नाही');
+    rep=buildReport('rollback',{expect:snap.raw,snapOk:true});
+    if(!rep.ok)throw new Error('Rollback नंतरची पडताळणी अयशस्वी');
+  }catch(e){
+    const back=autoRollback(cur.raw);
+    $('rollStatus').textContent=back?'✗ Rollback अयशस्वी; आधीची स्थिती परत ठेवली ✓.':'✗ Rollback अयशस्वी आणि आधीची स्थिती परत आणता आली नाही!';
+    log('Rollback अयशस्वी: '+e.message+' → आधीची स्थिती '+(back?'परत ठेवली':'परत आणता आली नाही'));
+    if(back)journalClear();else showEmergency('Rollback अयशस्वी ('+e.message+') आणि आधीची स्थिती परत आणता आली नाही.',cur);
+    alert('Rollback त्रुटी: '+e.message+'\n'+$('rollStatus').textContent);renderCurrent();return}
+  const ext1=extChange;journalClear();
+  $('rollStatus').textContent='✓ Rollback झाला आणि दोन्ही records परत वाचून Snapshot शी हुबेहूब जुळल्याचे पडताळले: '+label;
+  showReport(rep);log('Rollback यशस्वी (पडताळला): '+label);renderCurrent();lateCheck('Rollback',snap.raw,ext1);
+}
+async function runRollback(snap,label){
+  if(busy)return;startBusy();
+  try{const r=await withLock(()=>doRollback(snap,label));if(r.denied){alert(lockMsg(r));log('Rollback थांबवला: '+r.denied)}}
+  catch(e){log('Rollback अनपेक्षित त्रुटी: '+e.message);alert('अनपेक्षित त्रुटी; Rollback थांबवला: '+e.message+'\n\n"आत्ता तपासा" दाबा.')}
+  finally{endBusy()}
+}
+$('btnRollback').onclick=()=>{const r=getRolls(),i=Number($('rollSel').value);if(r[i])runRollback(r[i].s,new Date(r[i].s.createdAt).toLocaleString()+' · '+(r[i].s.label||''))};
+$('rollFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;let s;try{s=JSON.parse(await readFileSafe(f))}catch(err){$('rollStatus').innerHTML='<span class="bad">✗ फाइल वाचता/समजता आली नाही: '+esc(err.message)+'. काहीही बदलले नाही.</span>';log('Rollback फाइल नाकारली: '+err.message);alert('फाइल वाचता आली नाही (JSON खराब/अपूर्ण): '+err.message+'. काहीही बदललेले नाही.');e.target.value='';return}
+  await runRollback(s,'फाइल '+f.name);e.target.value=''};
+$('btnClearRolls').onclick=()=>{
+  if(busy)return;const r=getRolls();
+  if(!r.length&&!rollCorrupt)return alert('Snapshot नाहीत.');
+  const valid=r.filter(x=>x.ok),keep=valid.length?valid[valid.length-1].s:null,del=r.length-(keep?1:0);
+  if(!confirm('Rollback history साफ करायची?\n'+(keep?'सर्वात नवीन वैध Snapshot ('+new Date(keep.createdAt).toLocaleString()+') ठेवला जाईल.':'वैध Snapshot एकही नाही.')+'\nइतर '+del+' Snapshot(s) कायमचे हटतील. तुमच्या Backup फाइल्स यावर परिणामित होत नाहीत.'))return;
+  try{const s=JSON.stringify(keep?[keep]:[]);localStorage.setItem(ROLL,s);if(lsGet(ROLL)!==s)throw new Error('परत वाचताना जुळले नाही');rollMemo={raw:null,val:[]};rollCorrupt=false;$('rollStatus').textContent='✓ Rollback history साफ केली'+(keep?'; सर्वात नवीन वैध Snapshot राखला.':'.');log('Rollback history साफ केली (हटवले: '+del+')')}
+  catch(e){$('rollStatus').textContent='✗ साफ करता आले नाही: '+e.message;log('Rollback history साफ करणे अयशस्वी: '+e.message)}
+  updateButtons();
+};
+
+/* ---------- wiring ---------- */
+$('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{loadRecovery(await readFileSafe(f),'फाइल: '+f.name,false)}catch(err){loadRecovery(err,'फाइल: '+f.name,false)}e.target.value=''};
+$('btnPaste').onclick=()=>{const t=$('paste').value.trim();if(!t)return alert('आधी JSON paste करा');loadRecovery(t,'Paste केलेला JSON',false)};
+$('btnRescan').onclick=()=>{renderCurrent();renderPreview();updateButtons()};
+document.querySelectorAll('input[name=mode]').forEach(r=>r.onchange=renderPreview);
+$('chkTabs').onchange=updateButtons;$('chkSafe').onchange=updateButtons;$('chkEmpty').onchange=updateButtons;$('chkBad').onchange=updateButtons;$('rollSel').onchange=updateButtons;
+window.addEventListener('storage',ev=>{try{if(ev.storageArea!==localStorage)return}catch(e){return}if(ev.key===null||ev.key===KA||ev.key===KB){extChange++;log('दुसऱ्या tab/window ने Gym डेटा बदलला ('+(ev.key||'clear')+')');renderCurrent();renderPreview();updateButtons()}});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderCurrent();renderPreview()}});
+renderLog();log('Tool उघडला ('+location.origin+'). स्वयंचलित Restore नाही.');renderEnv();renderCurrent();renderJournal();
+$('recInfo').innerHTML='<span class="badge b-bad">Recovery फाइल अजून निवडलेली नाही</span>';
+$('valid').innerHTML='<p class="muted">वरील बटणाने मूळ Recovery JSON फाइल निवडा. तोपर्यंत Restore, Smart Merge आणि Exact Replace बंद राहतील.</p>';
+updateButtons();
+</script>
+</body>
+</html>
