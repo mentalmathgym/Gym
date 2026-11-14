@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MMG Local Storage Backup (read-only)</title>
+<style>body{font:16px system-ui,sans-serif;margin:0;padding:16px;background:#101820;color:#eef}h1{font-size:20px}button{font:inherit;min-height:48px;width:100%;margin:8px 0;border-radius:12px;border:0;background:#3bb89a;color:#042;font-weight:700}pre{background:#0a1118;padding:10px;border-radius:10px;overflow:auto;font-size:13px;white-space:pre-wrap}.m{color:#aab}</style></head>
+<body>
+<h1>MMG Local Storage Backup</h1>
+<p class="m">Read-only. It only READS this browser's saved Mental Math Gym data and downloads it as a file. It writes nothing, deletes nothing, and sends nothing over the network. Admin PIN keys are left out on purpose. Open this page from the SAME address as your app (https://mentalmathgym.github.io/Gym/).</p>
+<button id="go">Show what is stored</button>
+<pre id="out">Press the button.</pre>
+<button id="dl" disabled>Download backup file</button>
+<button id="cp" disabled>Copy backup to clipboard</button>
+<script>
+'use strict';
+const SKIP=['mmg_v2_pin','mmg_v271_pinhash','mmg_v271_pinlock'];
+let payload=null;
+function build(){
+  const keys={};let n=0;
+  for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith('mmg_')||SKIP.includes(k))continue;keys[k]=localStorage.getItem(k);n++}
+  let book=null,data=null;try{book=JSON.parse(keys['mmg_book_library_progress_v1']||'null')}catch(e){}try{data=JSON.parse(keys['mmg_v2_data']||'null')}catch(e){}
+  const summary={book:book?{attempted:book.attempted,correct:book.correct,historyRows:(book.history||[]).length}:null,
+    data:data&&data.progress?{attempted:data.progress.attempted,correct:data.progress.correct,chapters:(data.chapters||[]).length,historyRows:(data.progress.history||[]).length}:null};
+  payload={app:'The Mental Math Gym',format:'MMG-RAW-LOCALSTORAGE-BACKUP',version:1,origin:location.origin,exportedAt:new Date().toISOString(),keyCount:n,summary,keys};
+  return payload;
+}
+document.getElementById('go').onclick=()=>{const p=build();document.getElementById('out').textContent='Origin: '+p.origin+'\nKeys found: '+p.keyCount+'\nBook progress: '+JSON.stringify(p.summary.book)+'\nData area: '+JSON.stringify(p.summary.data)+(p.keyCount?'':'\n\nNOTHING found. You are probably on a different address than your app.');document.getElementById('dl').disabled=!p.keyCount;document.getElementById('cp').disabled=!p.keyCount};
+document.getElementById('dl').onclick=()=>{const p=payload||build();const b=new Blob([JSON.stringify(p,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='mmg-local-storage-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove()};
+document.getElementById('cp').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(payload||build(),null,2));alert('Copied.')}catch(e){alert('Copy failed: '+e.message)}};
+</script></body></html>
