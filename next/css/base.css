@@ -1,0 +1,17 @@
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.5;
+  padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 16px)}
+h1,h2,h3{line-height:1.25;margin:0 0 var(--s3)}
+h1{font-size:1.5rem} h2{font-size:1.25rem} h3{font-size:1.05rem}
+p{margin:0 0 var(--s3)}
+a{color:var(--mint)}
+.muted{color:var(--muted)}
+.skip{position:absolute;left:-999px;top:0;background:var(--mint);color:var(--on-accent);padding:var(--s2) var(--s3);z-index:100}
+.skip:focus{left:var(--s2);top:var(--s2)}
+.devbar{background:var(--gold);color:#2b1f00;font-size:.8rem;padding:6px var(--s4);text-align:center}
+#top{padding:var(--s4) var(--s4) 0;max-width:720px;margin:0 auto}
+#app{padding:var(--s4);max-width:720px;margin:0 auto;outline:none}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

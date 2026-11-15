@@ -1,0 +1,9 @@
+:root{
+  --bg:#101827; --panel:#1b2940; --panel2:#243650; --line:#4a5f7c;
+  --text:#f5f7fb; --muted:#b4c2d4; --mint:#65e5bd; --gold:#ffd36b; --danger:#ff9a9a; --ok:#65e5bd;
+  --on-accent:#08241c;
+  --r-s:10px; --r-m:14px; --r-l:20px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari",Arial,sans-serif;
+  --tap:48px; --nav-h:64px;
+}
